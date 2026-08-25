@@ -106,7 +106,11 @@ export default function DrawSurface({
     }
 
     // เครื่องมือลาก
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    try {
+      ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    } catch {
+      /* บาง environment/synthetic event ตั้ง capture ไม่ได้ — ไม่เป็นไร */
+    }
     startRef.current = pos
     if (tool === 'ink') inkRef.current = [pos]
   }
@@ -229,7 +233,12 @@ export default function DrawSurface({
       inkRef.current = []
     }
 
-    if (ann) addAnnotation(ann)
+    if (ann) {
+      addAnnotation(ann) // จะเลือก annotation ที่เพิ่งวาดให้อัตโนมัติ
+      // สลับกลับโหมดเลือก เพื่อให้เคอร์เซอร์กลับปกติ + กดปุ่มลบ/ปรับขนาดได้ทันที
+      // (ยกเว้นปากกา ที่ตั้งใจให้วาดต่อเนื่องหลายเส้น)
+      if (tool !== 'ink') setTool('select')
+    }
   }
 
   const onFile = (e: React.ChangeEvent<HTMLInputElement>): void => {

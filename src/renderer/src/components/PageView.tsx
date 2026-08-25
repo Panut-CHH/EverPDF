@@ -6,6 +6,7 @@ import type { SearchHit } from '@/lib/search'
 import AnnotationLayer from '@/components/AnnotationLayer'
 import DrawSurface from '@/components/DrawSurface'
 import FormLayer from '@/components/FormLayer'
+import EditTextLayer from '@/components/EditTextLayer'
 
 interface Size {
   width: number
@@ -111,8 +112,17 @@ function PageViewImpl({
 
           <AnnotationLayer originalIndex={originalIndex} size={size} pageHeightPt={pageHeightPt} />
 
-          {/* ชั้นวาด: เปิดเฉพาะเมื่อไม่ใช่โหมด select */}
-          {tool !== 'select' && (
+          {/* ชั้นแก้ข้อความเดิม */}
+          {tool === 'edittext' && (
+            <EditTextLayer
+              originalIndex={originalIndex}
+              size={size}
+              getCanvas={() => canvasRef.current}
+            />
+          )}
+
+          {/* ชั้นวาด: เปิดเฉพาะเครื่องมือวาด (ไม่ใช่ select/edittext) */}
+          {tool !== 'select' && tool !== 'edittext' && (
             <DrawSurface originalIndex={originalIndex} size={size} pageHeightPt={pageHeightPt} />
           )}
         </>

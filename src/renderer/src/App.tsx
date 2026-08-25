@@ -3,6 +3,7 @@ import { useDocStore } from '@/store/documentStore'
 import { loadPdf, readPagesInfo } from '@/lib/pdfjs'
 import { bakePdf } from '@/lib/pdfEditor'
 import { extractFields } from '@/lib/forms'
+import { extractTextRuns } from '@/lib/textLines'
 import { mergeAfter, extractPages } from '@/lib/docOps'
 import Toolbar from '@/components/Toolbar'
 import Sidebar from '@/components/Sidebar'
@@ -13,6 +14,7 @@ export default function App(): JSX.Element {
   const pdfBytes = useDocStore((s) => s.pdfBytes)
   const loadDocument = useDocStore((s) => s.loadDocument)
   const setFormFields = useDocStore((s) => s.setFormFields)
+  const setTextRuns = useDocStore((s) => s.setTextRuns)
   const markClean = useDocStore((s) => s.markClean)
 
   /** เปิดไฟล์ผ่าน native dialog แล้วอ่านข้อมูลหน้า + ฟอร์มเข้าสู่ store */
@@ -23,11 +25,14 @@ export default function App(): JSX.Element {
     const pages = await readPagesInfo(doc)
     const fileName = res.filePath?.split(/[\\/]/).pop() ?? 'document.pdf'
     loadDocument({ bytes: res.data, filePath: res.filePath ?? null, fileName, pages })
-    // ดึง form fields (ถ้ามี) ให้กรอกได้
+    // ดึง form fields + text runs (สำหรับ Edit Text)
     extractFields(doc)
       .then(setFormFields)
       .catch(() => setFormFields([]))
-  }, [loadDocument, setFormFields])
+    extractTextRuns(doc)
+      .then(setTextRuns)
+      .catch(() => setTextRuns([]))
+  }, [loadDocument, setFormFields, setTextRuns])
 
   /** บันทึก: อบ annotation + ฟอร์ม + จัดหน้า แล้วเขียนไฟล์ (Save As ถ้ายังไม่มี path) */
   const saveFile = useCallback(
@@ -75,8 +80,11 @@ export default function App(): JSX.Element {
       extractFields(doc)
         .then(setFormFields)
         .catch(() => setFormFields([]))
+      extractTextRuns(doc)
+        .then(setTextRuns)
+        .catch(() => setTextRuns([]))
     },
-    [loadDocument, setFormFields]
+    [loadDocument, setFormFields, setTextRuns]
   )
 
   /** แทรกไฟล์ PDF อื่นต่อจากหน้าปัจจุบัน */

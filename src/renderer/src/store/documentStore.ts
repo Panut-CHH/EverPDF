@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { Annotation } from '@/lib/annotations'
 import type { FormField } from '@/lib/forms'
+import type { TextRun } from '@/lib/textLines'
 
 export type Tool =
   | 'select'
@@ -12,6 +13,7 @@ export type Tool =
   | 'line'
   | 'arrow'
   | 'ink'
+  | 'edittext'
 
 export type FitMode = 'custom' | 'width' | 'page'
 
@@ -46,6 +48,9 @@ interface DocumentState extends Snapshot {
 
   /** form fields ที่พบในเอกสาร (แยกจาก history) */
   formFields: FormField[]
+
+  /** text runs สำหรับฟีเจอร์ Edit Text (แยกจาก history) */
+  textRuns: TextRun[]
 
   /** ค่าเริ่มต้นของเครื่องมือวาด */
   drawColor: string
@@ -85,6 +90,7 @@ interface DocumentState extends Snapshot {
 
   setFormFields: (fields: FormField[]) => void
   setFormValue: (name: string, value: string | boolean) => void
+  setTextRuns: (runs: TextRun[]) => void
 
   removePage: (displayIndex: number) => void
   movePage: (from: number, to: number) => void
@@ -127,6 +133,7 @@ export const useDocStore = create<DocumentState>((set, get) => {
     selectedId: null,
     stagedImage: null,
     formFields: [],
+    textRuns: [],
 
     drawColor: '#d21c1c',
     highlightColor: '#ffeb3b',
@@ -149,6 +156,7 @@ export const useDocStore = create<DocumentState>((set, get) => {
         selectedId: null,
         stagedImage: null,
         formFields: [],
+        textRuns: [],
         dirty: false,
         past: [],
         future: []
@@ -209,6 +217,8 @@ export const useDocStore = create<DocumentState>((set, get) => {
         formFields: s.formFields.map((f) => (f.name === name ? { ...f, value } : f)),
         dirty: true
       })),
+
+    setTextRuns: (textRuns) => set({ textRuns }),
 
     removePage: (displayIndex) =>
       commit((s) => {

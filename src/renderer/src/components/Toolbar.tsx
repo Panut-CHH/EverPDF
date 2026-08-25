@@ -12,7 +12,8 @@ interface Props {
 
 const TOOLS: { id: Tool; label: string; icon: string; hint: string }[] = [
   { id: 'select', label: 'เลือก', icon: '⬚', hint: 'เลือก/ย้าย/ปรับขนาด' },
-  { id: 'text', label: 'ข้อความ', icon: 'T', hint: 'คลิกบนหน้าเพื่อเพิ่มข้อความ' },
+  { id: 'edittext', label: 'แก้ข้อความ', icon: '✏', hint: 'คลิกข้อความเดิมในเอกสารเพื่อแก้ตรงจุดนั้น' },
+  { id: 'text', label: 'ข้อความ', icon: 'T', hint: 'คลิกบนหน้าเพื่อเพิ่มข้อความใหม่' },
   { id: 'highlight', label: 'ไฮไลต์', icon: '▨', hint: 'ลากคลุมข้อความเพื่อไฮไลต์' },
   { id: 'ink', label: 'ปากกา', icon: '✎', hint: 'วาดอิสระ' },
   { id: 'rect', label: 'สี่เหลี่ยม', icon: '▭', hint: 'ลากเป็นกรอบ' },

@@ -575,3 +575,21 @@ body {
   margin: 0;
   word-break: break-word;
 }
+
+/* ---------- Edit Text layer ---------- */
+.edittext-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+}
+.edittext-run {
+  position: absolute;
+  cursor: text;
+  border-radius: 2px;
+  transition: background 0.08s, outline 0.08s;
+  outline: 1px solid transparent;
+}
+.edittext-run:hover {
+  background: rgba(14, 124, 255, 0.18);
+  outline: 1px solid var(--accent);
+}

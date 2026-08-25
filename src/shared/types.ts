@@ -1,0 +1,58 @@
+/**
+ * ชนิดข้อมูลกลางที่ใช้ร่วมกันทั้ง main / preload / renderer
+ * เก็บไว้ที่เดียวเพื่อกันความไม่ตรงกันระหว่างฝั่ง Node กับฝั่ง UI
+ */
+
+/** ผลลัพธ์การเปิดไฟล์จาก native dialog */
+export interface OpenFileResult {
+  canceled: boolean
+  filePath?: string
+  /** เนื้อไฟล์ PDF เป็น bytes (ส่งข้าม IPC เป็น Uint8Array) */
+  data?: Uint8Array
+}
+
+/** คำสั่งบันทึกไฟล์ */
+export interface SaveFileRequest {
+  /** ถ้ามี path เดิม = Save ทับ, ถ้าไม่มี = Save As (เปิด dialog) */
+  filePath?: string
+  data: Uint8Array
+  /** ชื่อไฟล์เริ่มต้นตอน Save As */
+  defaultName?: string
+}
+
+export interface SaveFileResult {
+  canceled: boolean
+  filePath?: string
+}
+
+/** พารามิเตอร์สำหรับลงลายเซ็นดิจิทัล (PKI) ที่ main process */
+export interface DigitalSignRequest {
+  /** bytes ของ PDF ที่จะเซ็น (ควรเป็นไฟล์ที่ยัง flatten annotation แล้ว) */
+  pdf: Uint8Array
+  /** path ของไฟล์ใบรับรอง .pfx / .p12 */
+  p12Path: string
+  /** รหัสผ่านของใบรับรอง */
+  passphrase: string
+  /** ข้อมูล metadata ของลายเซ็น (ไม่บังคับ) */
+  reason?: string
+  location?: string
+  contactInfo?: string
+  signerName?: string
+}
+
+export interface DigitalSignResult {
+  ok: boolean
+  /** PDF ที่เซ็นแล้ว */
+  signed?: Uint8Array
+  error?: string
+}
+
+/** ช่องทาง IPC ทั้งหมด รวมไว้เป็น const กันพิมพ์ผิด */
+export const IPC = {
+  openFile: 'file:open',
+  saveFile: 'file:save',
+  pickP12: 'file:pickP12',
+  digitalSign: 'sign:digital',
+  onMenuOpen: 'menu:open',
+  onMenuSave: 'menu:save'
+} as const

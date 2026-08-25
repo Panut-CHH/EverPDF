@@ -513,3 +513,63 @@ body {
   border-radius: 4px;
   padding: 4px;
 }
+
+/* ---------- Form layer ---------- */
+.form-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+}
+.form-field {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid rgba(14, 124, 255, 0.5);
+  background: rgba(14, 124, 255, 0.06);
+  font-family: 'Sarabun', 'Leelawadee UI', sans-serif;
+  font-size: 13px;
+  color: #111;
+  padding: 0 3px;
+}
+.form-field:focus {
+  outline: 2px solid var(--accent);
+  background: #fff;
+}
+.form-check {
+  width: 18px !important;
+  height: 18px !important;
+  padding: 0;
+}
+
+/* ---------- Verify dialog ---------- */
+.sig-card {
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: var(--panel-2);
+}
+.sig-card.ok {
+  border-left-color: #3fb950;
+}
+.sig-card.bad {
+  border-left-color: var(--danger);
+}
+.sig-status {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.sig-details {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 4px 10px;
+  margin: 0;
+  font-size: 13px;
+}
+.sig-details dt {
+  color: var(--muted);
+}
+.sig-details dd {
+  margin: 0;
+  word-break: break-word;
+}

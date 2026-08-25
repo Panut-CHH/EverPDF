@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useDocStore, type Tool } from '@/store/documentStore'
 import SignaturePad from '@/components/SignaturePad'
 import SignDialog from '@/components/SignDialog'
+import VerifyDialog from '@/components/VerifyDialog'
 
 interface Props {
   onOpen: () => void
@@ -51,6 +52,7 @@ export default function Toolbar({ onOpen, onSave, onSaveAs }: Props): JSX.Elemen
 
   const [showPad, setShowPad] = useState(false)
   const [showSign, setShowSign] = useState(false)
+  const [showVerify, setShowVerify] = useState(false)
 
   const handleTool = (t: Tool): void => {
     if (t === 'signature') setShowPad(true)
@@ -187,6 +189,9 @@ export default function Toolbar({ onOpen, onSave, onSaveAs }: Props): JSX.Elemen
         <button className="btn-sign" disabled={!hasDoc} onClick={() => setShowSign(true)}>
           🔏 เซ็นดิจิทัล
         </button>
+        <button disabled={!hasDoc} onClick={() => setShowVerify(true)} title="ตรวจสอบลายเซ็น">
+          🔎 ตรวจ
+        </button>
       </div>
       <div className="file-name">
         {fileName || 'ยังไม่มีไฟล์'} {dirty && <span className="dirty">●</span>}
@@ -194,6 +199,7 @@ export default function Toolbar({ onOpen, onSave, onSaveAs }: Props): JSX.Elemen
 
       {showPad && <SignaturePad onClose={() => setShowPad(false)} />}
       {showSign && <SignDialog onClose={() => setShowSign(false)} />}
+      {showVerify && <VerifyDialog onClose={() => setShowVerify(false)} />}
     </div>
   )
 }

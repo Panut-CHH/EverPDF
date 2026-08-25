@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { Annotation } from '@/lib/annotations'
+import type { FormField } from '@/lib/forms'
 
 export type Tool =
   | 'select'
@@ -43,6 +44,9 @@ interface DocumentState extends Snapshot {
   selectedId: string | null
   stagedImage: { dataUrl: string; isSignature: boolean } | null
 
+  /** form fields ที่พบในเอกสาร (แยกจาก history) */
+  formFields: FormField[]
+
   /** ค่าเริ่มต้นของเครื่องมือวาด */
   drawColor: string
   highlightColor: string
@@ -78,6 +82,9 @@ interface DocumentState extends Snapshot {
 
   stageImage: (dataUrl: string, isSignature: boolean) => void
   clearStaged: () => void
+
+  setFormFields: (fields: FormField[]) => void
+  setFormValue: (name: string, value: string | boolean) => void
 
   removePage: (displayIndex: number) => void
   movePage: (from: number, to: number) => void
@@ -119,6 +126,7 @@ export const useDocStore = create<DocumentState>((set, get) => {
 
     selectedId: null,
     stagedImage: null,
+    formFields: [],
 
     drawColor: '#d21c1c',
     highlightColor: '#ffeb3b',
@@ -140,6 +148,7 @@ export const useDocStore = create<DocumentState>((set, get) => {
         currentPage: 0,
         selectedId: null,
         stagedImage: null,
+        formFields: [],
         dirty: false,
         past: [],
         future: []
@@ -193,6 +202,13 @@ export const useDocStore = create<DocumentState>((set, get) => {
     stageImage: (dataUrl, isSignature) =>
       set({ stagedImage: { dataUrl, isSignature }, tool: isSignature ? 'signature' : 'image' }),
     clearStaged: () => set({ stagedImage: null }),
+
+    setFormFields: (formFields) => set({ formFields }),
+    setFormValue: (name, value) =>
+      set((s) => ({
+        formFields: s.formFields.map((f) => (f.name === name ? { ...f, value } : f)),
+        dirty: true
+      })),
 
     removePage: (displayIndex) =>
       commit((s) => {

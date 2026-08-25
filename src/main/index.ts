@@ -11,6 +11,7 @@ import {
   type DigitalSignRequest
 } from '@shared/types'
 import { digitalSign } from './pdfSigner'
+import { verifyPdf } from './pdfVerify'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const isDev = !!process.env['ELECTRON_RENDERER_URL']
@@ -129,6 +130,8 @@ ipcMain.handle(IPC.pickP12, async (): Promise<string | null> => {
 })
 
 ipcMain.handle(IPC.digitalSign, (_e, req: DigitalSignRequest) => digitalSign(req))
+
+ipcMain.handle(IPC.verifySign, (_e, bytes: Uint8Array) => verifyPdf(bytes))
 
 /* ---------- lifecycle ---------- */
 

@@ -44,7 +44,13 @@ function Thumb({
   )
 }
 
-export default function Sidebar(): JSX.Element {
+export default function Sidebar({
+  onInsert,
+  onExtract
+}: {
+  onInsert: () => void
+  onExtract: () => void
+}): JSX.Element {
   const doc = usePdfDoc()
   const pageOrder = useDocStore((s) => s.pageOrder)
   const currentPage = useDocStore((s) => s.currentPage)
@@ -87,6 +93,11 @@ export default function Sidebar(): JSX.Element {
         <button className="danger" title="ลบหน้า" onClick={() => removePage(currentPage)}>
           🗑
         </button>
+      </div>
+
+      <div className="page-ops">
+        <button title="แทรกไฟล์ PDF อื่นต่อจากหน้านี้" onClick={onInsert}>➕ แทรก</button>
+        <button title="แยกหน้านี้เป็นไฟล์ใหม่" onClick={onExtract}>⎘ แยก</button>
       </div>
 
       <div className="thumbs">

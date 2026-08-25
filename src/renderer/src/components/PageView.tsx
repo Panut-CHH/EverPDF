@@ -5,6 +5,7 @@ import { renderPage } from '@/lib/pdfjs'
 import type { SearchHit } from '@/lib/search'
 import AnnotationLayer from '@/components/AnnotationLayer'
 import DrawSurface from '@/components/DrawSurface'
+import FormLayer from '@/components/FormLayer'
 
 interface Size {
   width: number
@@ -105,6 +106,8 @@ function PageViewImpl({
               ))}
             </div>
           )}
+
+          <FormLayer originalIndex={originalIndex} size={size} />
 
           <AnnotationLayer originalIndex={originalIndex} size={size} pageHeightPt={pageHeightPt} />
 

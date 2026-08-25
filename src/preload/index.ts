@@ -5,7 +5,8 @@ import {
   type SaveFileRequest,
   type SaveFileResult,
   type DigitalSignRequest,
-  type DigitalSignResult
+  type DigitalSignResult,
+  type VerifyResult
 } from '@shared/types'
 
 /**
@@ -23,6 +24,9 @@ const api = {
 
   digitalSign: (req: DigitalSignRequest): Promise<DigitalSignResult> =>
     ipcRenderer.invoke(IPC.digitalSign, req),
+
+  verifySign: (bytes: Uint8Array): Promise<VerifyResult> =>
+    ipcRenderer.invoke(IPC.verifySign, bytes),
 
   /** รับสัญญาณจากเมนู (Ctrl+O / Ctrl+S) → คืน unsubscribe */
   onMenuOpen: (cb: () => void) => {

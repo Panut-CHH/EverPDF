@@ -2,6 +2,8 @@ import { useCallback, useEffect } from 'react'
 import { useDocStore } from '@/store/documentStore'
 import { loadPdf, readPagesInfo } from '@/lib/pdfjs'
 import { bakePdf } from '@/lib/pdfEditor'
+import { extractFields } from '@/lib/forms'
+import { mergeAfter, extractPages } from '@/lib/docOps'
 import Toolbar from '@/components/Toolbar'
 import Sidebar from '@/components/Sidebar'
 import Viewer from '@/components/Viewer'
@@ -10,9 +12,10 @@ import Welcome from '@/components/Welcome'
 export default function App(): JSX.Element {
   const pdfBytes = useDocStore((s) => s.pdfBytes)
   const loadDocument = useDocStore((s) => s.loadDocument)
+  const setFormFields = useDocStore((s) => s.setFormFields)
   const markClean = useDocStore((s) => s.markClean)
 
-  /** เปิดไฟล์ผ่าน native dialog แล้วอ่านข้อมูลหน้าเข้าสู่ store */
+  /** เปิดไฟล์ผ่าน native dialog แล้วอ่านข้อมูลหน้า + ฟอร์มเข้าสู่ store */
   const openFile = useCallback(async () => {
     const res = await window.api.openFile()
     if (res.canceled || !res.data) return
@@ -20,9 +23,13 @@ export default function App(): JSX.Element {
     const pages = await readPagesInfo(doc)
     const fileName = res.filePath?.split(/[\\/]/).pop() ?? 'document.pdf'
     loadDocument({ bytes: res.data, filePath: res.filePath ?? null, fileName, pages })
-  }, [loadDocument])
+    // ดึง form fields (ถ้ามี) ให้กรอกได้
+    extractFields(doc)
+      .then(setFormFields)
+      .catch(() => setFormFields([]))
+  }, [loadDocument, setFormFields])
 
-  /** บันทึก: อบ annotation + จัดหน้า แล้วเขียนไฟล์ (Save As ถ้ายังไม่มี path) */
+  /** บันทึก: อบ annotation + ฟอร์ม + จัดหน้า แล้วเขียนไฟล์ (Save As ถ้ายังไม่มี path) */
   const saveFile = useCallback(
     async (forceDialog = false) => {
       const s = useDocStore.getState()
@@ -31,7 +38,8 @@ export default function App(): JSX.Element {
         original: s.pdfBytes,
         pageOrder: s.pageOrder,
         pages: s.pages,
-        annotations: s.annotations
+        annotations: s.annotations,
+        formFields: s.formFields
       })
       const res = await window.api.saveFile({
         filePath: forceDialog ? undefined : s.filePath ?? undefined,
@@ -44,6 +52,55 @@ export default function App(): JSX.Element {
     },
     [markClean]
   )
+
+  /** อบสถานะปัจจุบันทั้งหมด (annotation+ฟอร์ม+จัดหน้า) เป็น bytes */
+  const bakeCurrent = useCallback(async (): Promise<Uint8Array | null> => {
+    const s = useDocStore.getState()
+    if (!s.pdfBytes) return null
+    return bakePdf({
+      original: s.pdfBytes,
+      pageOrder: s.pageOrder,
+      pages: s.pages,
+      annotations: s.annotations,
+      formFields: s.formFields
+    })
+  }, [])
+
+  /** โหลด bytes ชุดใหม่เข้าเป็นเอกสารปัจจุบัน (ใช้หลัง merge/extract) */
+  const reloadFrom = useCallback(
+    async (bytes: Uint8Array, fileName: string, filePath: string | null) => {
+      const doc = await loadPdf(bytes)
+      const pages = await readPagesInfo(doc)
+      loadDocument({ bytes, filePath, fileName, pages })
+      extractFields(doc)
+        .then(setFormFields)
+        .catch(() => setFormFields([]))
+    },
+    [loadDocument, setFormFields]
+  )
+
+  /** แทรกไฟล์ PDF อื่นต่อจากหน้าปัจจุบัน */
+  const insertPdf = useCallback(async () => {
+    const s = useDocStore.getState()
+    const baked = await bakeCurrent()
+    if (!baked) return
+    const picked = await window.api.openFile()
+    if (picked.canceled || !picked.data) return
+    const merged = await mergeAfter(baked, picked.data, s.currentPage)
+    await reloadFrom(merged, s.fileName, s.filePath)
+  }, [bakeCurrent, reloadFrom])
+
+  /** แยกหน้าปัจจุบันออกเป็นไฟล์ใหม่ */
+  const extractCurrent = useCallback(async () => {
+    const s = useDocStore.getState()
+    const baked = await bakeCurrent()
+    if (!baked) return
+    const out = await extractPages(baked, [s.currentPage])
+    await window.api.saveFile({
+      data: out,
+      defaultName: s.fileName.replace(/\.pdf$/i, '') + `-หน้า${s.currentPage + 1}.pdf`
+    })
+  }, [bakeCurrent])
 
   // ผูกกับเมนู (Ctrl+O / Ctrl+S)
   useEffect(() => {
@@ -85,7 +142,7 @@ export default function App(): JSX.Element {
       <div className="body">
         {pdfBytes ? (
           <>
-            <Sidebar />
+            <Sidebar onInsert={insertPdf} onExtract={extractCurrent} />
             <Viewer />
           </>
         ) : (

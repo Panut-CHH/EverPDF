@@ -47,12 +47,32 @@ export interface DigitalSignResult {
   error?: string
 }
 
+/** ข้อมูลลายเซ็นดิจิทัลหนึ่งอันจากการตรวจสอบ */
+export interface SignatureInfo {
+  signer: string
+  issuer: string
+  validFrom: string
+  validTo: string
+  signingTime?: string
+  /** เนื้อหาไม่ถูกแก้ไขหลังเซ็น (ไดเจสต์ + ลายเซ็นถูกต้อง) */
+  integrity: boolean
+  /** ลายเซ็นครอบคลุมทั้งไฟล์ */
+  coversWholeDoc: boolean
+  error?: string
+}
+
+export interface VerifyResult {
+  hasSignature: boolean
+  signatures: SignatureInfo[]
+}
+
 /** ช่องทาง IPC ทั้งหมด รวมไว้เป็น const กันพิมพ์ผิด */
 export const IPC = {
   openFile: 'file:open',
   saveFile: 'file:save',
   pickP12: 'file:pickP12',
   digitalSign: 'sign:digital',
+  verifySign: 'sign:verify',
   onMenuOpen: 'menu:open',
   onMenuSave: 'menu:save'
 } as const

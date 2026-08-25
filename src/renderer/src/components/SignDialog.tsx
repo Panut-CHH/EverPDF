@@ -39,7 +39,8 @@ export default function SignDialog({ onClose }: { onClose: () => void }): JSX.El
         original: s.pdfBytes,
         pageOrder: s.pageOrder,
         pages: s.pages,
-        annotations: s.annotations
+        annotations: s.annotations,
+        formFields: s.formFields
       })
 
       // 2) เซ็นที่ main process

@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useDocStore } from '@/store/documentStore'
 import type { FormField } from '@/lib/forms'
 
@@ -17,8 +18,12 @@ export default function FormLayer({
   originalIndex: number
   size: Size
 }): JSX.Element | null {
-  const fields = useDocStore((s) => s.formFields.filter((f) => f.pageIndex === originalIndex))
+  const all = useDocStore((s) => s.formFields)
   const tool = useDocStore((s) => s.tool)
+  const fields = useMemo(
+    () => all.filter((f) => f.pageIndex === originalIndex),
+    [all, originalIndex]
+  )
 
   if (tool !== 'select' || fields.length === 0) return null
 

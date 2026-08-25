@@ -203,6 +203,8 @@ body {
   justify-content: center;
   align-items: flex-start;
   padding: 24px;
+  /* กัน clientWidth เปลี่ยนตอน scrollbar โผล่/หาย (เลี่ยง fit-width loop) */
+  scrollbar-gutter: stable;
 }
 .page-scroll {
   display: flex;

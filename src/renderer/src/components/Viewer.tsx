@@ -34,9 +34,10 @@ export default function Viewer(): JSX.Element {
     const ph = rot ? info.width : info.height
     const availW = scrollRef.current.clientWidth - H_PADDING
     const availH = scrollRef.current.clientHeight - 48
-    const z =
-      fitMode === 'width' ? availW / pw : Math.min(availW / pw, availH / ph)
-    setZoom(z, fitMode)
+    const z = fitMode === 'width' ? availW / pw : Math.min(availW / pw, availH / ph)
+    // guard: อย่า set ถ้าต่างจากเดิมนิดเดียว — กัน loop กับ ResizeObserver (scrollbar โผล่/หาย)
+    const cur = useDocStore.getState().zoom
+    if (Math.abs(z - cur) > 0.01) setZoom(z, fitMode)
   }, [fitMode, pageOrder, pages, currentPage, setZoom])
 
   useLayoutEffect(() => {

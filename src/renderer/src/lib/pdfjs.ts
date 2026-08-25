@@ -1,5 +1,5 @@
 import * as pdfjs from 'pdfjs-dist'
-import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist'
+import type { PDFDocumentProxy, PDFPageProxy, RenderTask } from 'pdfjs-dist'
 // Vite จะแปลง URL นี้เป็น path ของ worker ที่ bundle แล้ว
 import PdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?worker'
 import type { PageInfo } from '@/store/documentStore'
@@ -25,6 +25,10 @@ export async function readPagesInfo(doc: PDFDocumentProxy): Promise<PageInfo[]> 
   return pages
 }
 
+// เก็บ render task ที่กำลังทำงานของแต่ละ canvas เพื่อยกเลิกก่อนเริ่มใหม่
+// (กัน error "Cannot use the same canvas during multiple render()")
+const activeRenders = new WeakMap<HTMLCanvasElement, RenderTask>()
+
 /**
  * เรนเดอร์หนึ่งหน้าลง canvas ที่ให้มา
  * @param extraRotation องศาที่ผู้ใช้สั่งหมุนเพิ่ม (บวกกับ /Rotate เดิมของหน้า)
@@ -36,6 +40,16 @@ export async function renderPage(
   scale: number,
   extraRotation = 0
 ): Promise<{ width: number; height: number }> {
+  // ยกเลิก render เดิมของ canvas นี้ (ถ้ายังทำงานอยู่)
+  const prev = activeRenders.get(canvas)
+  if (prev) {
+    try {
+      prev.cancel()
+    } catch {
+      /* ignore */
+    }
+  }
+
   const dpr = window.devicePixelRatio || 1
   const viewport = page.getViewport({ scale, rotation: (page.rotate + extraRotation) % 360 })
 
@@ -47,6 +61,16 @@ export async function renderPage(
   const ctx = canvas.getContext('2d')!
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-  await page.render({ canvasContext: ctx, viewport }).promise
+  const task = page.render({ canvasContext: ctx, viewport })
+  activeRenders.set(canvas, task)
+  try {
+    await task.promise
+  } catch (err) {
+    // การยกเลิกเป็นเรื่องปกติ — โยน error เฉพาะกรณีอื่น
+    if ((err as { name?: string })?.name !== 'RenderingCancelledException') throw err
+  } finally {
+    if (activeRenders.get(canvas) === task) activeRenders.delete(canvas)
+  }
+
   return { width: viewport.width, height: viewport.height }
 }

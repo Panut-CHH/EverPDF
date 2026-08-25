@@ -102,6 +102,17 @@ export default function App(): JSX.Element {
     })
   }, [bakeCurrent])
 
+  // hook โหลดจาก bytes โดยตรง (ใช้ได้ทั้ง drag-drop ในอนาคต และการทดสอบ)
+  useEffect(() => {
+    ;(window as unknown as { __everLoad?: (b64: string, name: string) => void }).__everLoad = (
+      b64,
+      name
+    ) => {
+      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
+      void reloadFrom(bytes, name, null)
+    }
+  }, [reloadFrom])
+
   // ผูกกับเมนู (Ctrl+O / Ctrl+S)
   useEffect(() => {
     const offOpen = window.api.onMenuOpen(() => void openFile())

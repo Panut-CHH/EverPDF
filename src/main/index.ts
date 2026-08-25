@@ -28,7 +28,7 @@ function createWindow(): void {
     backgroundColor: '#1e1e1e',
     title: 'EverPDF',
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(__dirname, '../preload/index.mjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false // ต้องปิดเพื่อให้ preload ใช้ require ได้ (contextBridge ยังปลอดภัย)
@@ -36,6 +36,14 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => mainWindow?.show())
+
+  // log ข้อผิดพลาดระดับ process ของ renderer (เงียบตอนปกติ)
+  mainWindow.webContents.on('preload-error', (_e, p, err) => {
+    console.error(`[preload-error] ${p}`, err)
+  })
+  mainWindow.webContents.on('render-process-gone', (_e, details) => {
+    console.error(`[render-gone]`, details)
+  })
 
   // เปิดลิงก์ภายนอกด้วย browser จริง ไม่เปิดในแอป
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {

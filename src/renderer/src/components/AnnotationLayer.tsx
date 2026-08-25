@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { useDocStore } from '@/store/documentStore'
 import {
   isBoxLike,
@@ -27,8 +27,12 @@ export default function AnnotationLayer({
   size: Size
   pageHeightPt: number
 }): JSX.Element {
-  const annotations = useDocStore((s) =>
-    s.annotations.filter((a) => a.pageIndex === originalIndex)
+  // เลือก array ดิบ (ref คงที่) แล้วค่อย filter ด้วย useMemo
+  // — zustand v5 ห้าม selector คืน array ใหม่ทุกครั้ง (จะ loop ไม่รู้จบ)
+  const all = useDocStore((s) => s.annotations)
+  const annotations = useMemo(
+    () => all.filter((a) => a.pageIndex === originalIndex),
+    [all, originalIndex]
   )
 
   const shapes = annotations.filter((a) => a.type === 'line' || a.type === 'ink')

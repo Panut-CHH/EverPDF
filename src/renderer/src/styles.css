@@ -1,3 +1,14 @@
+@font-face {
+  font-family: 'Sarabun';
+  font-weight: 400;
+  src: url('/fonts/Sarabun-Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Sarabun';
+  font-weight: 700;
+  src: url('/fonts/Sarabun-Bold.ttf') format('truetype');
+}
+
 :root {
   --bg: #1e1e1e;
   --panel: #252526;
@@ -22,7 +33,7 @@ body,
 }
 
 body {
-  font-family: 'Segoe UI', 'Sarabun', system-ui, sans-serif;
+  font-family: 'Segoe UI', 'Sarabun', 'Leelawadee UI', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
   overflow: hidden;
@@ -233,6 +244,7 @@ body {
   white-space: pre-wrap;
   overflow: hidden;
   line-height: 1.2;
+  font-family: 'Sarabun', 'Leelawadee UI', sans-serif;
 }
 .ann-delete {
   position: absolute;
@@ -384,4 +396,120 @@ body {
   border-radius: 6px;
   touch-action: none;
   cursor: crosshair;
+}
+
+/* ---------- Continuous scroll ---------- */
+.pages-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 24px 0 60px;
+}
+.page-container {
+  position: relative;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  background: #fff;
+}
+.page-badge {
+  position: absolute;
+  left: 50%;
+  bottom: -22px;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ---------- Draw surface + shapes ---------- */
+.draw-surface {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+}
+.shape-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+.annotation.shape {
+  border: none;
+}
+.annotation.selectable-shape.selected {
+  outline: 1px dashed var(--accent);
+}
+
+/* ---------- Search ---------- */
+.searchbar {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+.searchbar input {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 8px;
+  width: 200px;
+}
+.searchbar .count {
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 60px;
+  text-align: center;
+}
+.search-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+.search-hit {
+  position: absolute;
+  background: rgba(255, 210, 0, 0.4);
+  outline: 1px solid rgba(255, 170, 0, 0.8);
+}
+.search-hit.active {
+  background: rgba(255, 140, 0, 0.6);
+}
+
+/* ---------- Draw options in toolbar ---------- */
+.draw-opts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.draw-opts input[type='color'] {
+  width: 28px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: none;
+  border-radius: 4px;
+}
+.draw-opts input[type='range'] {
+  width: 80px;
+}
+.page-input {
+  width: 44px;
+  text-align: center;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 4px;
 }

@@ -1,27 +1,36 @@
-import { PDFDocument, StandardFonts, rgb, degrees, type PDFFont, type PDFPage } from 'pdf-lib'
+import {
+  PDFDocument,
+  StandardFonts,
+  rgb,
+  degrees,
+  type PDFFont,
+  type PDFImage,
+  type PDFPage,
+  type RGB
+} from 'pdf-lib'
 import fontkit from '@pdf-lib/fontkit'
-import type { Annotation, TextAnnotation, ImageAnnotation } from '@/lib/annotations'
+import type {
+  Annotation,
+  TextAnnotation,
+  ImageAnnotation,
+  HighlightAnnotation,
+  RectAnnotation,
+  LineAnnotation,
+  InkAnnotation
+} from '@/lib/annotations'
 import type { PageInfo } from '@/store/documentStore'
 
-/**
- * แปลงสี hex (#rrggbb) → rgb() ของ pdf-lib (ค่า 0..1)
- */
-function hexToRgb(hex: string) {
+/** แปลงสี hex (#rrggbb) → RGB ของ pdf-lib (0..1) */
+function hexToRgb(hex: string): RGB {
   const h = hex.replace('#', '')
   const n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16)
   return rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255)
 }
 
-/**
- * พยายามโหลดฟอนต์ไทยที่ผู้ใช้วางไว้ที่ public/fonts
- * ถ้าไม่มี → คืน null แล้วไปใช้ Helvetica (อังกฤษ/ตัวเลขเท่านั้น)
- *
- * วิธีเพิ่มฟอนต์ไทย: วางไฟล์ NotoSansThai-Regular.ttf ไว้ที่
- *   src/renderer/public/fonts/NotoSansThai-Regular.ttf
- */
-async function loadThaiFontBytes(): Promise<ArrayBuffer | null> {
+/** โหลดฟอนต์จาก public/ (คืน null ถ้าไม่พบ) */
+async function fetchFont(path: string): Promise<ArrayBuffer | null> {
   try {
-    const res = await fetch('/fonts/NotoSansThai-Regular.ttf')
+    const res = await fetch(path)
     if (!res.ok) return null
     return await res.arrayBuffer()
   } catch {
@@ -30,23 +39,23 @@ async function loadThaiFontBytes(): Promise<ArrayBuffer | null> {
 }
 
 export interface BakeOptions {
-  /** bytes ต้นฉบับ */
   original: Uint8Array
-  /** ลำดับหน้าที่ต้องการ (index อ้างอิงหน้าต้นฉบับ) */
   pageOrder: number[]
-  /** ข้อมูลหน้า (สำหรับองศาหมุนที่ผู้ใช้สั่ง) */
   pages: PageInfo[]
-  /** annotation ทั้งหมด (pageIndex อ้างอิงหน้าต้นฉบับ) */
   annotations: Annotation[]
+}
+
+/** คู่ฟอนต์ปกติ/หนา ที่ใช้ตอน bake */
+interface FontPair {
+  regular: PDFFont
+  bold: PDFFont
 }
 
 /**
  * "อบ" (bake) การแก้ไขทั้งหมดกลับเข้า PDF จริง แล้วคืน bytes ใหม่
- *
- * ทำ 3 อย่างตามลำดับ:
- *   1) จัดหน้าใหม่ตาม pageOrder (รองรับลบ/สลับหน้า) โดย copy หน้าจากต้นฉบับ
- *   2) ใส่องศาหมุนที่ผู้ใช้สั่ง
- *   3) วาด annotation (ข้อความ/รูป/ลายเซ็น) ลงบนหน้า โดยแปลงพิกัด DOM → PDF
+ *   1) จัดหน้าใหม่ตาม pageOrder (ลบ/สลับหน้า)
+ *   2) ใส่องศาหมุน
+ *   3) วาด annotation ทุกชนิดลงหน้า (แปลงพิกัด DOM → PDF)
  */
 export async function bakePdf(opts: BakeOptions): Promise<Uint8Array> {
   const { original, pageOrder, pages, annotations } = opts
@@ -55,88 +64,161 @@ export async function bakePdf(opts: BakeOptions): Promise<Uint8Array> {
   const outDoc = await PDFDocument.create()
   outDoc.registerFontkit(fontkit)
 
-  // เตรียมฟอนต์: ไทยถ้ามี, ไม่งั้น Helvetica
-  const thaiBytes = await loadThaiFontBytes()
-  let font: PDFFont
-  if (thaiBytes) {
-    font = await outDoc.embedFont(thaiBytes, { subset: true })
-  } else {
-    font = await outDoc.embedFont(StandardFonts.Helvetica)
+  // ฟอนต์: Sarabun (ไทย) ถ้ามี ไม่งั้น Helvetica
+  const regBytes = await fetchFont('/fonts/Sarabun-Regular.ttf')
+  const boldBytes = await fetchFont('/fonts/Sarabun-Bold.ttf')
+  const font: FontPair = {
+    regular: regBytes
+      ? await outDoc.embedFont(regBytes, { subset: true })
+      : await outDoc.embedFont(StandardFonts.Helvetica),
+    bold: boldBytes
+      ? await outDoc.embedFont(boldBytes, { subset: true })
+      : await outDoc.embedFont(StandardFonts.HelveticaBold)
   }
 
-  // 1) copy หน้าตามลำดับใหม่
   const copied = await outDoc.copyPages(srcDoc, pageOrder)
   copied.forEach((p) => outDoc.addPage(p))
 
-  // cache รูปที่ embed แล้ว (กัน embed ซ้ำถ้ารูปเดียวกันหลายที่)
-  const imageCache = new Map<string, Awaited<ReturnType<typeof outDoc.embedPng>>>()
+  const imageCache = new Map<string, PDFImage>()
 
-  // วนแต่ละหน้าในเอกสารใหม่
   for (let displayIndex = 0; displayIndex < pageOrder.length; displayIndex++) {
     const originalIndex = pageOrder[displayIndex]
     const page = outDoc.getPage(displayIndex)
 
-    // 2) องศาหมุน (บวกจากที่ผู้ใช้สั่ง)
     const userRot = pages[originalIndex]?.rotation ?? 0
     if (userRot) {
-      const base = page.getRotation().angle
-      page.setRotation(degrees((base + userRot) % 360))
+      page.setRotation(degrees((page.getRotation().angle + userRot) % 360))
     }
 
-    // 3) annotation บนหน้านี้
-    const pageAnns = annotations.filter((a) => a.pageIndex === originalIndex)
-    for (const ann of pageAnns) {
-      if (ann.type === 'text') {
-        drawText(page, ann, font)
-      } else {
-        await drawImage(outDoc, page, ann, imageCache)
-      }
+    for (const ann of annotations.filter((a) => a.pageIndex === originalIndex)) {
+      await drawAnnotation(outDoc, page, ann, font, imageCache)
     }
   }
 
   return outDoc.save()
 }
 
-/** วาดข้อความ: แปลงพิกัด normalized (บนซ้าย) → พิกัด PDF (ล่างซ้าย) */
-function drawText(page: PDFPage, ann: TextAnnotation, font: PDFFont): void {
-  const { width, height } = page.getSize()
-  const x = ann.x * width
-  // y ใน DOM นับจากบน, PDF นับจากล่าง; ann.fontSize คือ baseline offset โดยประมาณ
-  const yTop = ann.y * height
-  const y = height - yTop - ann.fontSize
+async function drawAnnotation(
+  doc: PDFDocument,
+  page: PDFPage,
+  ann: Annotation,
+  font: FontPair,
+  cache: Map<string, PDFImage>
+): Promise<void> {
+  switch (ann.type) {
+    case 'text':
+      return drawText(page, ann, font)
+    case 'image':
+      return drawImage(doc, page, ann, cache)
+    case 'highlight':
+      return drawHighlight(page, ann)
+    case 'rect':
+      return drawRect(page, ann)
+    case 'line':
+      return drawLine(page, ann)
+    case 'ink':
+      return drawInk(page, ann)
+  }
+}
 
-  page.drawText(ann.text, {
-    x,
-    y,
-    size: ann.fontSize,
-    font,
-    color: hexToRgb(ann.color)
+function drawText(page: PDFPage, ann: TextAnnotation, font: FontPair): void {
+  const { width, height } = page.getSize()
+  const f = ann.bold ? font.bold : font.regular
+  const x = ann.x * width
+  const yTop = ann.y * height
+  // ข้อความหลายบรรทัด: วาดทีละบรรทัด
+  const lines = ann.text.split('\n')
+  lines.forEach((line, i) => {
+    const y = height - yTop - ann.fontSize * (i + 1)
+    page.drawText(line, { x, y, size: ann.fontSize, font: f, color: hexToRgb(ann.color) })
   })
 }
 
-/** วาดรูป/ลายเซ็น (รองรับ PNG data URL) */
 async function drawImage(
   doc: PDFDocument,
   page: PDFPage,
   ann: ImageAnnotation,
-  cache: Map<string, Awaited<ReturnType<typeof doc.embedPng>>>
+  cache: Map<string, PDFImage>
 ): Promise<void> {
   const { width, height } = page.getSize()
-
   let img = cache.get(ann.dataUrl)
   if (!img) {
     const base64 = ann.dataUrl.split(',')[1] ?? ''
     const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
-    // เลือก embedder ตามชนิดไฟล์ (ลายเซ็นที่วาด = PNG, รูปแทรกอาจเป็น JPEG)
     const isJpeg = /^data:image\/jpe?g/i.test(ann.dataUrl)
     img = isJpeg ? await doc.embedJpg(bytes) : await doc.embedPng(bytes)
     cache.set(ann.dataUrl, img)
   }
+  page.drawImage(img, {
+    x: ann.x * width,
+    y: height - ann.y * height - ann.h * height,
+    width: ann.w * width,
+    height: ann.h * height
+  })
+}
 
-  const w = ann.w * width
-  const h = ann.h * height
-  const x = ann.x * width
-  const y = height - ann.y * height - h // มุมล่างซ้ายของรูป
+function drawHighlight(page: PDFPage, ann: HighlightAnnotation): void {
+  const { width, height } = page.getSize()
+  page.drawRectangle({
+    x: ann.x * width,
+    y: height - ann.y * height - ann.h * height,
+    width: ann.w * width,
+    height: ann.h * height,
+    color: hexToRgb(ann.color),
+    opacity: ann.opacity
+  })
+}
 
-  page.drawImage(img, { x, y, width: w, height: h })
+function drawRect(page: PDFPage, ann: RectAnnotation): void {
+  const { width, height } = page.getSize()
+  page.drawRectangle({
+    x: ann.x * width,
+    y: height - ann.y * height - ann.h * height,
+    width: ann.w * width,
+    height: ann.h * height,
+    borderColor: hexToRgb(ann.color),
+    borderWidth: ann.strokeWidth,
+    color: ann.fill ? hexToRgb(ann.fill) : undefined
+  })
+}
+
+function drawLine(page: PDFPage, ann: LineAnnotation): void {
+  const { width, height } = page.getSize()
+  const start = { x: ann.x1 * width, y: height - ann.y1 * height }
+  const end = { x: ann.x2 * width, y: height - ann.y2 * height }
+  const color = hexToRgb(ann.color)
+  page.drawLine({ start, end, thickness: ann.strokeWidth, color })
+
+  if (ann.arrow) {
+    // หัวลูกศรที่ปลาย (end): สองเส้นสั้นทำมุม ~28°
+    const angle = Math.atan2(end.y - start.y, end.x - start.x)
+    const len = 10 + ann.strokeWidth * 2
+    const spread = 0.5
+    for (const s of [spread, -spread]) {
+      page.drawLine({
+        start: end,
+        end: {
+          x: end.x - len * Math.cos(angle - s),
+          y: end.y - len * Math.sin(angle - s)
+        },
+        thickness: ann.strokeWidth,
+        color
+      })
+    }
+  }
+}
+
+function drawInk(page: PDFPage, ann: InkAnnotation): void {
+  const { width, height } = page.getSize()
+  const color = hexToRgb(ann.color)
+  for (let i = 1; i < ann.points.length; i++) {
+    const a = ann.points[i - 1]
+    const b = ann.points[i]
+    page.drawLine({
+      start: { x: a.x * width, y: height - a.y * height },
+      end: { x: b.x * width, y: height - b.y * height },
+      thickness: ann.strokeWidth,
+      color
+    })
+  }
 }

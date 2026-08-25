@@ -55,6 +55,30 @@ export default function App(): JSX.Element {
     }
   }, [openFile, saveFile])
 
+  // คีย์ลัด: Undo/Redo + ลบ annotation ที่เลือก
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      const s = useDocStore.getState()
+      const editing =
+        document.activeElement?.tagName === 'INPUT' ||
+        (document.activeElement as HTMLElement | null)?.isContentEditable
+      const ctrl = e.ctrlKey || e.metaKey
+
+      if (ctrl && e.key.toLowerCase() === 'z') {
+        e.preventDefault()
+        e.shiftKey ? s.redo() : s.undo()
+      } else if (ctrl && e.key.toLowerCase() === 'y') {
+        e.preventDefault()
+        s.redo()
+      } else if ((e.key === 'Delete' || e.key === 'Backspace') && s.selectedId && !editing) {
+        e.preventDefault()
+        s.removeAnnotation(s.selectedId)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   return (
     <div className="app">
       <Toolbar onOpen={openFile} onSave={() => saveFile(false)} onSaveAs={() => saveFile(true)} />

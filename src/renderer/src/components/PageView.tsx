@@ -82,8 +82,11 @@ function PageViewImpl({
       }}
       style={size ? { width: size.width, height: size.height } : { width: 600, height: 800 }}
       onPointerDown={(e) => {
-        // คลิกพื้นที่ว่างในโหมด select = ยกเลิกการเลือก
-        if (tool === 'select' && e.target === canvasRef.current) select(null)
+        // คลิกที่ใดก็ได้ที่ "ไม่ใช่ตัว annotation" ในโหมด select → ยกเลิกการเลือก
+        // (คลิกโดน annotation จะไม่ bubble มาถึงนี่ หรือ target อยู่ใน .annotation)
+        if (tool !== 'select') return
+        const target = e.target as HTMLElement
+        if (!target.closest('.annotation')) select(null)
       }}
     >
       <canvas ref={canvasRef} className="page-canvas" />

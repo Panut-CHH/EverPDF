@@ -99,7 +99,11 @@ function BoxItem({
       o: { x: ann.x, y: ann.y, w: ann.w, h: ann.h },
       moved: false
     }
-    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    try {
+      ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    } catch {
+      /* synthetic/edge pointer — ข้าม */
+    }
   }
 
   const onMove = (e: React.PointerEvent): void => {
@@ -137,13 +141,27 @@ function BoxItem({
     height: `${ann.h * 100}%`
   }
 
+  // ข้อความ: ทำตัวเป็น text field — พื้นที่ข้อความวางเคอร์เซอร์/เลือกตัวอักษรได้
+  // จึงไม่ผูก move-drag ที่ตัวกล่อง (ย้ายผ่าน grip แทน)
+  const isText = ann.type === 'text'
+
   return (
     <div
-      className={`annotation ${selected ? 'selected' : ''}`}
+      className={`annotation ${selected ? 'selected' : ''} ${isText ? 'is-text' : ''}`}
       style={style}
-      onPointerDown={(e) => startDrag(e, 'move')}
-      onPointerMove={onMove}
-      onPointerUp={endDrag}
+      onPointerDown={
+        isText
+          ? (e) => {
+              // ยังไม่ถูกเลือก → คลิกครั้งแรกเพื่อเลือก (ไม่ลาก, ไม่แย่งการวางเคอร์เซอร์)
+              if (!selected) {
+                e.stopPropagation()
+                select(ann.id)
+              }
+            }
+          : (e) => startDrag(e, 'move')
+      }
+      onPointerMove={isText ? undefined : onMove}
+      onPointerUp={isText ? undefined : endDrag}
       onClick={(e) => {
         e.stopPropagation()
         select(ann.id)
@@ -163,6 +181,20 @@ function BoxItem({
           >
             ×
           </button>
+
+          {/* กล่องข้อความ: ปุ่มจับเพื่อย้าย (เพราะพื้นที่ข้อความสงวนไว้ให้เลือกตัวอักษร) */}
+          {isText && (
+            <div
+              className="ann-move"
+              title="ลากเพื่อย้าย"
+              onPointerDown={(e) => startDrag(e, 'move')}
+              onPointerMove={onMove}
+              onPointerUp={endDrag}
+            >
+              ✥
+            </div>
+          )}
+
           <div
             className="ann-resize"
             onPointerDown={(e) => startDrag(e, 'resize')}

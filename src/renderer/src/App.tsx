@@ -129,6 +129,14 @@ export default function App(): JSX.Element {
     }
   }, [reloadFrom])
 
+  // เปิดไฟล์ที่ถูกดับเบิลคลิกจากภายนอก (file association)
+  useEffect(() => {
+    const off = window.api.onExternalOpen(({ data, fileName, filePath }) => {
+      void reloadFrom(data, fileName, filePath)
+    })
+    return off
+  }, [reloadFrom])
+
   // คีย์ลัดเปิด/บันทึก (เดิมอยู่ในเมนู native ที่ตอนนี้เอาออกแล้ว)
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {

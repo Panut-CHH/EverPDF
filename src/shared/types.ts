@@ -96,6 +96,7 @@ export const IPC = {
   getRecent: 'file:getRecent',
   printPdf: 'file:print',
   ocr: 'ocr:recognize',
+  externalOpen: 'file:externalOpen',
   digitalSign: 'sign:digital',
   verifySign: 'sign:verify',
   onMenuOpen: 'menu:open',

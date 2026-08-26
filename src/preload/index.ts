@@ -50,6 +50,20 @@ const api = {
     ext: string
   }): Promise<SaveFileResult> => ipcRenderer.invoke(IPC.saveBinary, req),
 
+  /** รับไฟล์ที่ถูกเปิดจากภายนอก (ดับเบิลคลิก .pdf) → คืน unsubscribe */
+  onExternalOpen: (
+    cb: (payload: { filePath: string; fileName: string; data: Uint8Array }) => void
+  ) => {
+    const listener = (
+      _e: unknown,
+      payload: { filePath: string; fileName: string; data: Uint8Array }
+    ): void => cb(payload)
+    ipcRenderer.on(IPC.externalOpen, listener)
+    return () => {
+      ipcRenderer.removeListener(IPC.externalOpen, listener)
+    }
+  },
+
   /** รับสัญญาณจากเมนู (Ctrl+O / Ctrl+S) → คืน unsubscribe */
   onMenuOpen: (cb: () => void) => {
     const listener = (): void => cb()

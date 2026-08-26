@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, dialog, Menu, shell } from 'electron'
 import { readFile, writeFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
 import { join, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { dirname } from 'node:path'
@@ -22,6 +23,34 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const isDev = !!process.env['ELECTRON_RENDERER_URL']
 
 let mainWindow: BrowserWindow | null = null
+
+/* ---------- File association (เปิด .pdf ด้วย EverPDF) ---------- */
+
+/** ไฟล์ PDF ที่รอเปิด (จากดับเบิลคลิกไฟล์ตอนแอปยังไม่พร้อม) */
+let pendingFile: string | null = null
+
+/** หา path ไฟล์ .pdf จาก argv (ตอนถูกเปิดผ่าน file association บน Windows) */
+function pdfPathFromArgv(argv: string[]): string | null {
+  for (const a of argv) {
+    if (/\.pdf$/i.test(a) && existsSync(a)) return a
+  }
+  return null
+}
+
+/** อ่านไฟล์แล้วส่งให้ renderer เปิด (ผ่าน IPC) */
+async function openExternalFile(filePath: string): Promise<void> {
+  try {
+    const data = await readFile(filePath)
+    addRecent(filePath)
+    mainWindow?.webContents.send(IPC.externalOpen, {
+      filePath,
+      fileName: basename(filePath),
+      data: new Uint8Array(data)
+    })
+  } catch {
+    /* เปิดไม่ได้ก็ข้าม */
+  }
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -49,6 +78,15 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => mainWindow?.show())
+
+  // เมื่อหน้าเว็บโหลดเสร็จ ถ้ามีไฟล์รอเปิด (ดับเบิลคลิก .pdf) → เปิดให้
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (pendingFile) {
+      const f = pendingFile
+      pendingFile = null
+      setTimeout(() => void openExternalFile(f), 300)
+    }
+  })
 
   // log ข้อผิดพลาดระดับ process ของ renderer (เงียบตอนปกติ)
   mainWindow.webContents.on('preload-error', (_e, p, err) => {
@@ -224,14 +262,40 @@ ipcMain.handle(IPC.printPdf, async (_e, data: Uint8Array): Promise<boolean> => {
 
 /* ---------- lifecycle ---------- */
 
-app.whenReady().then(() => {
-  createWindow()
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
-})
+// ให้มีอินสแตนซ์เดียว: ดับเบิลคลิก .pdf ไฟล์ที่ 2 → เปิดในหน้าต่างเดิม
+const gotLock = app.requestSingleInstanceLock()
+if (!gotLock) {
+  app.quit()
+} else {
+  // Windows: จับ path จาก argv ตอนเปิดครั้งแรก
+  pendingFile = pdfPathFromArgv(process.argv.slice(1))
 
-app.on('window-all-closed', () => {
-  shutdownOcr()
-  if (process.platform !== 'darwin') app.quit()
-})
+  // ดับเบิลคลิกไฟล์อื่นขณะแอปเปิดอยู่ (Windows/Linux)
+  app.on('second-instance', (_e, argv) => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    }
+    const f = pdfPathFromArgv(argv.slice(1))
+    if (f) void openExternalFile(f)
+  })
+
+  // macOS: เปิดไฟล์ผ่าน Finder / ดับเบิลคลิก
+  app.on('open-file', (e, filePath) => {
+    e.preventDefault()
+    if (mainWindow) void openExternalFile(filePath)
+    else pendingFile = filePath
+  })
+
+  app.whenReady().then(() => {
+    createWindow()
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    })
+  })
+
+  app.on('window-all-closed', () => {
+    shutdownOcr()
+    if (process.platform !== 'darwin') app.quit()
+  })
+}

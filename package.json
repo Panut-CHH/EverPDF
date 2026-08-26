@@ -35,11 +35,27 @@
       "**/node_modules/tesseract.js/**",
       "**/node_modules/tesseract.js-core/**"
     ],
+    "fileAssociations": [
+      {
+        "ext": "pdf",
+        "name": "PDF Document",
+        "description": "เอกสาร PDF",
+        "icon": "resources/icon.ico",
+        "role": "Editor"
+      }
+    ],
     "win": {
       "target": [
         "nsis"
       ],
-      "icon": "resources/icon.png"
+      "icon": "resources/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     },
     "mac": {
       "target": [

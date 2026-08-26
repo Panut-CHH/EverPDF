@@ -32,6 +32,9 @@ function createWindow(): void {
     show: false,
     backgroundColor: '#0f1117',
     title: 'EverPDF',
+    // ซ่อน title bar ระบบ แต่คงปุ่มหน้าต่าง native (– □ ×) แบบ overlay ในธีมมืด
+    titleBarStyle: 'hidden',
+    titleBarOverlay: { color: '#14161d', symbolColor: '#c8cdd8', height: 40 },
     // ไอคอนหน้าต่าง (ตอน dev; production ใช้ไอคอนของ exe)
     ...(isDev ? { icon: join(process.cwd(), 'resources/icon.png') } : {}),
     webPreferences: {
@@ -65,44 +68,8 @@ function createWindow(): void {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
-  buildMenu()
-}
-
-/** เมนูบนสุด + คีย์ลัด (Ctrl+O เปิด, Ctrl+S บันทึก) แบบ Acrobat */
-function buildMenu(): void {
-  const template: Electron.MenuItemConstructorOptions[] = [
-    {
-      label: 'ไฟล์',
-      submenu: [
-        {
-          label: 'เปิด...',
-          accelerator: 'CmdOrCtrl+O',
-          click: () => mainWindow?.webContents.send(IPC.onMenuOpen)
-        },
-        {
-          label: 'บันทึก',
-          accelerator: 'CmdOrCtrl+S',
-          click: () => mainWindow?.webContents.send(IPC.onMenuSave)
-        },
-        { type: 'separator' },
-        { role: 'quit', label: 'ออก' }
-      ]
-    },
-    {
-      label: 'มุมมอง',
-      submenu: [
-        { role: 'reload', label: 'โหลดใหม่' },
-        { role: 'toggleDevTools', label: 'เครื่องมือนักพัฒนา' },
-        { type: 'separator' },
-        { role: 'resetZoom', label: 'ซูมปกติ' },
-        { role: 'zoomIn', label: 'ซูมเข้า' },
-        { role: 'zoomOut', label: 'ซูมออก' },
-        { type: 'separator' },
-        { role: 'togglefullscreen', label: 'เต็มจอ' }
-      ]
-    }
-  ]
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+  // ไม่ใช้เมนู native (ทุกคำสั่งอยู่ใน toolbar + คีย์ลัดจัดการในฝั่ง renderer)
+  Menu.setApplicationMenu(null)
 }
 
 /* ---------- IPC handlers ---------- */

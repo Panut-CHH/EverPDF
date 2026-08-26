@@ -5,6 +5,7 @@ import { bakePdf } from '@/lib/pdfEditor'
 import { extractFields } from '@/lib/forms'
 import { extractTextRuns } from '@/lib/textLines'
 import { mergeAfter, extractPages } from '@/lib/docOps'
+import TitleBar from '@/components/TitleBar'
 import Toolbar from '@/components/Toolbar'
 import Sidebar from '@/components/Sidebar'
 import Viewer from '@/components/Viewer'
@@ -128,14 +129,20 @@ export default function App(): JSX.Element {
     }
   }, [reloadFrom])
 
-  // ผูกกับเมนู (Ctrl+O / Ctrl+S)
+  // คีย์ลัดเปิด/บันทึก (เดิมอยู่ในเมนู native ที่ตอนนี้เอาออกแล้ว)
   useEffect(() => {
-    const offOpen = window.api.onMenuOpen(() => void openFile())
-    const offSave = window.api.onMenuSave(() => void saveFile(false))
-    return () => {
-      offOpen()
-      offSave()
+    const onKey = (e: KeyboardEvent): void => {
+      const ctrl = e.ctrlKey || e.metaKey
+      if (ctrl && e.key.toLowerCase() === 'o') {
+        e.preventDefault()
+        void openFile()
+      } else if (ctrl && e.key.toLowerCase() === 's') {
+        e.preventDefault()
+        void saveFile(false)
+      }
     }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
   }, [openFile, saveFile])
 
   // คีย์ลัด: Undo/Redo + ลบ annotation ที่เลือก
@@ -175,6 +182,7 @@ export default function App(): JSX.Element {
 
   return (
     <div className="app">
+      <TitleBar />
       <Toolbar onOpen={openFile} onSave={() => saveFile(false)} onSaveAs={() => saveFile(true)} />
       <div className="body">
         {pdfBytes ? (

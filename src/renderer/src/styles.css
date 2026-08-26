@@ -1078,3 +1078,59 @@ body {
 .ocr-toast svg {
   color: var(--accent-2);
 }
+
+/* ---------- Custom title bar ---------- */
+.titlebar {
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  background: #14161d;
+  border-bottom: 1px solid var(--border);
+  -webkit-app-region: drag;
+  user-select: none;
+}
+.titlebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.titlebar-brand img {
+  border-radius: 4px;
+}
+.titlebar-app {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  background: linear-gradient(100deg, #4a9bff, #14b8a6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.titlebar-file {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.titlebar-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  box-shadow: 0 0 6px var(--accent-2);
+  flex-shrink: 0;
+}
+/* เว้นที่ให้ปุ่มหน้าต่าง native (– □ ×) ทางขวา */
+.titlebar-controls-space {
+  width: 138px;
+  flex-shrink: 0;
+}

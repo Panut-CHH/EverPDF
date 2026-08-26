@@ -86,8 +86,6 @@ export default function Toolbar({ onOpen, onSave, onSaveAs }: Props): JSX.Elemen
   const setZoom = useDocStore((s) => s.setZoom)
   const fitMode = useDocStore((s) => s.fitMode)
   const setFitMode = useDocStore((s) => s.setFitMode)
-  const dirty = useDocStore((s) => s.dirty)
-  const fileName = useDocStore((s) => s.fileName)
   const hasDoc = useDocStore((s) => !!s.pdfBytes)
 
   const currentPage = useDocStore((s) => s.currentPage)
@@ -254,11 +252,6 @@ export default function Toolbar({ onOpen, onSave, onSaveAs }: Props): JSX.Elemen
           disabled={!hasDoc}
           onClick={() => setShowVerify(true)}
         />
-      </div>
-
-      <div className="file-name" title={fileName}>
-        {fileName || 'ยังไม่มีไฟล์'}
-        {dirty && <span className="dot" title="ยังไม่ได้บันทึก" />}
       </div>
 
       {showPad && <SignaturePad onClose={() => setShowPad(false)} />}

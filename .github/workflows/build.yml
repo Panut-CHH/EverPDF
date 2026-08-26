@@ -7,6 +7,9 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+permissions:
+  contents: write # ให้สร้าง GitHub Release ได้
+
 jobs:
   build:
     strategy:
@@ -38,9 +41,8 @@ jobs:
 
       - name: Build installer (${{ matrix.os }})
         run: npm run ${{ matrix.script }}
-        env:
-          # ให้ electron-builder ไม่พยายาม publish อัตโนมัติ
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # ไม่ตั้ง GH_TOKEN ที่นี่ → electron-builder จะไม่พยายาม publish เอง
+        # (การสร้าง Release ทำในขั้น softprops ด้านล่างแทน)
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4

@@ -7,6 +7,7 @@ import {
   Droplets,
   EyeOff,
   Printer,
+  Lock,
   Loader2
 } from 'lucide-react'
 import { useDocStore } from '@/store/documentStore'
@@ -15,6 +16,7 @@ import { loadPdf, destroyPdf } from '@/lib/pdfjs'
 import { bakePdf } from '@/lib/pdfEditor'
 import { pagesToText, imagesToPdf, applyRedaction } from '@/lib/documentTools'
 import StampDialog from '@/components/StampDialog'
+import PasswordDialog from '@/components/PasswordDialog'
 
 /** อบสถานะปัจจุบันเป็น bytes (annotation + ฟอร์ม + จัดหน้า) */
 async function bakedBytes(): Promise<Uint8Array | null> {
@@ -38,6 +40,7 @@ export default function ToolsMenu(): JSX.Element {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
   const [showStamp, setShowStamp] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   // ปิดเมนูเมื่อคลิกข้างนอก
@@ -185,6 +188,14 @@ export default function ToolsMenu(): JSX.Element {
           <button onClick={doRedaction}>
             <EyeOff size={16} /> ใช้ Redaction & บันทึก
           </button>
+          <button
+            onClick={() => {
+              setOpen(false)
+              setShowPassword(true)
+            }}
+          >
+            <Lock size={16} /> ใส่รหัสผ่าน & เข้ารหัส…
+          </button>
           <div className="tools-sep" />
           <button onClick={print}>
             <Printer size={16} /> พิมพ์ (Ctrl+P)
@@ -193,6 +204,7 @@ export default function ToolsMenu(): JSX.Element {
       )}
 
       {showStamp && <StampDialog onClose={() => setShowStamp(false)} />}
+      {showPassword && <PasswordDialog onClose={() => setShowPassword(false)} />}
     </div>
   )
 }

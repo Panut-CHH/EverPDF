@@ -66,11 +66,34 @@ export interface VerifyResult {
   signatures: SignatureInfo[]
 }
 
+/** ไฟล์ที่เขียนลงโฟลเดอร์ (export หลายไฟล์) */
+export interface NamedFile {
+  name: string
+  data: Uint8Array
+}
+
+/** รูปที่เปิดมา (สำหรับสร้าง PDF จากรูป) */
+export interface OpenedImage {
+  name: string
+  data: Uint8Array
+  mime: string
+}
+
+export interface RecentFile {
+  path: string
+  name: string
+}
+
 /** ช่องทาง IPC ทั้งหมด รวมไว้เป็น const กันพิมพ์ผิด */
 export const IPC = {
   openFile: 'file:open',
+  openByPath: 'file:openByPath',
   saveFile: 'file:save',
+  saveBinary: 'file:saveBinary',
   pickP12: 'file:pickP12',
+  writeFilesToDir: 'file:writeToDir',
+  openImages: 'file:openImages',
+  getRecent: 'file:getRecent',
   digitalSign: 'sign:digital',
   verifySign: 'sign:verify',
   onMenuOpen: 'menu:open',

@@ -87,6 +87,17 @@ export default function App(): JSX.Element {
     [loadDocument, setFormFields, setTextRuns]
   )
 
+  /** เปิดไฟล์จาก path โดยตรง (ไฟล์ล่าสุด) */
+  const openRecent = useCallback(
+    async (path: string) => {
+      const res = await window.api.openByPath(path)
+      if (res.canceled || !res.data) return
+      const name = path.split(/[\\/]/).pop() ?? 'document.pdf'
+      await reloadFrom(res.data, name, res.filePath ?? path)
+    },
+    [reloadFrom]
+  )
+
   /** แทรกไฟล์ PDF อื่นต่อจากหน้าปัจจุบัน */
   const insertPdf = useCallback(async () => {
     const s = useDocStore.getState()
@@ -165,7 +176,7 @@ export default function App(): JSX.Element {
             <Viewer />
           </>
         ) : (
-          <Welcome onOpen={openFile} />
+          <Welcome onOpen={openFile} onOpenRecent={openRecent} />
         )}
       </div>
     </div>

@@ -6,7 +6,10 @@ import {
   type SaveFileResult,
   type DigitalSignRequest,
   type DigitalSignResult,
-  type VerifyResult
+  type VerifyResult,
+  type NamedFile,
+  type OpenedImage,
+  type RecentFile
 } from '@shared/types'
 
 /**
@@ -27,6 +30,19 @@ const api = {
 
   verifySign: (bytes: Uint8Array): Promise<VerifyResult> =>
     ipcRenderer.invoke(IPC.verifySign, bytes),
+
+  openByPath: (filePath: string): Promise<OpenFileResult> =>
+    ipcRenderer.invoke(IPC.openByPath, filePath),
+  getRecent: (): Promise<RecentFile[]> => ipcRenderer.invoke(IPC.getRecent),
+  writeFilesToDir: (files: NamedFile[]): Promise<number> =>
+    ipcRenderer.invoke(IPC.writeFilesToDir, files),
+  openImages: (): Promise<OpenedImage[]> => ipcRenderer.invoke(IPC.openImages),
+  saveBinary: (req: {
+    data: Uint8Array
+    defaultName: string
+    filterName: string
+    ext: string
+  }): Promise<SaveFileResult> => ipcRenderer.invoke(IPC.saveBinary, req),
 
   /** รับสัญญาณจากเมนู (Ctrl+O / Ctrl+S) → คืน unsubscribe */
   onMenuOpen: (cb: () => void) => {

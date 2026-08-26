@@ -1,8 +1,11 @@
-import { FolderOpen, PenTool, Highlighter, FileText, ShieldCheck } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { FolderOpen, PenTool, Highlighter, FileText, ShieldCheck, Clock, File } from 'lucide-react'
 import logoUrl from '@/assets/logo.png'
+import type { RecentFile } from '@shared/types'
 
 interface Props {
   onOpen: () => void
+  onOpenRecent: (path: string) => void
 }
 
 const FEATURES = [
@@ -13,7 +16,13 @@ const FEATURES = [
 ]
 
 /** หน้าจอเริ่มต้นเมื่อยังไม่ได้เปิดไฟล์ */
-export default function Welcome({ onOpen }: Props): JSX.Element {
+export default function Welcome({ onOpen, onOpenRecent }: Props): JSX.Element {
+  const [recent, setRecent] = useState<RecentFile[]>([])
+
+  useEffect(() => {
+    window.api.getRecent().then(setRecent).catch(() => setRecent([]))
+  }, [])
+
   return (
     <div className="welcome">
       <div className="welcome-glow" />
@@ -36,6 +45,27 @@ export default function Welcome({ onOpen }: Props): JSX.Element {
             </div>
           ))}
         </div>
+
+        {recent.length > 0 && (
+          <div className="recent-box">
+            <div className="recent-head">
+              <Clock size={14} strokeWidth={2} /> เปิดล่าสุด
+            </div>
+            <div className="recent-list">
+              {recent.map((r) => (
+                <button
+                  key={r.path}
+                  className="recent-item"
+                  title={r.path}
+                  onClick={() => onOpenRecent(r.path)}
+                >
+                  <File size={15} strokeWidth={2} />
+                  <span>{r.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

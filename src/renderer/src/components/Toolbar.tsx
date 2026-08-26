@@ -26,6 +26,7 @@ import { useDocStore, type Tool } from '@/store/documentStore'
 import SignaturePad from '@/components/SignaturePad'
 import SignDialog from '@/components/SignDialog'
 import VerifyDialog from '@/components/VerifyDialog'
+import ToolsMenu from '@/components/ToolsMenu'
 
 interface Props {
   onOpen: () => void
@@ -229,6 +230,10 @@ export default function Toolbar({ onOpen, onSave, onSaveAs }: Props): JSX.Elemen
       )}
 
       <div className="tb-spacer" />
+
+      <div className="tb-group">
+        <ToolsMenu />
+      </div>
 
       <div className="tb-group">
         <button

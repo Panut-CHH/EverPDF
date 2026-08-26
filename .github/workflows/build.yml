@@ -1,0 +1,60 @@
+name: Build EverPDF
+
+# บิ้วเมื่อ push ขึ้น main, ตอนติด tag เวอร์ชัน (เช่น v0.1.0), หรือกดสั่งเอง
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            script: dist:win
+            artifact: EverPDF-Windows
+            files: dist/*.exe
+          - os: macos-latest
+            script: dist:mac
+            artifact: EverPDF-macOS
+            files: dist/*.dmg
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build installer (${{ matrix.os }})
+        run: npm run ${{ matrix.script }}
+        env:
+          # ให้ electron-builder ไม่พยายาม publish อัตโนมัติ
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.files }}
+          if-no-files-found: error
+
+      # ถ้าเป็นการติด tag (เช่น v1.0.0) → สร้าง GitHub Release แนบไฟล์ให้ดาวน์โหลด
+      - name: Publish to Release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.files }}
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

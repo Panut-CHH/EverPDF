@@ -1,0 +1,12 @@
+# normalize ข้อความเป็น LF (กัน warning CRLF), ไฟล์ binary ปล่อยตามจริง
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.icns binary
+*.ttf binary
+*.otf binary
+*.traineddata binary
+*.pdf binary

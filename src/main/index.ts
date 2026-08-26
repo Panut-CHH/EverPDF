@@ -16,6 +16,7 @@ import {
 import { digitalSign } from './pdfSigner'
 import { verifyPdf } from './pdfVerify'
 import { getRecent, addRecent } from './recentFiles'
+import { ocrRecognize, shutdownOcr } from './ocrService'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const isDev = !!process.env['ELECTRON_RENDERER_URL']
@@ -209,6 +210,8 @@ ipcMain.handle(IPC.digitalSign, (_e, req: DigitalSignRequest) => digitalSign(req
 
 ipcMain.handle(IPC.verifySign, (_e, bytes: Uint8Array) => verifyPdf(bytes))
 
+ipcMain.handle(IPC.ocr, (_e, png: Uint8Array, langs?: string) => ocrRecognize(png, langs))
+
 /** พิมพ์ PDF: เขียนไฟล์ชั่วคราว → โหลดในหน้าต่างซ่อน (ตัวอ่าน PDF ของ Chromium) → print */
 let printCounter = 0
 ipcMain.handle(IPC.printPdf, async (_e, data: Uint8Array): Promise<boolean> => {
@@ -239,5 +242,6 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
+  shutdownOcr()
   if (process.platform !== 'darwin') app.quit()
 })

@@ -1056,3 +1056,25 @@ body {
 .note-box svg {
   flex-shrink: 0;
 }
+
+/* ---------- OCR progress toast ---------- */
+.ocr-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  padding: 11px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  box-shadow: var(--shadow-pop);
+}
+.ocr-toast svg {
+  color: var(--accent-2);
+}

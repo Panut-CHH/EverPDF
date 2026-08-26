@@ -8,6 +8,7 @@ import {
   EyeOff,
   Printer,
   Lock,
+  ScanText,
   Loader2
 } from 'lucide-react'
 import { useDocStore } from '@/store/documentStore'
@@ -41,6 +42,7 @@ export default function ToolsMenu(): JSX.Element {
   const [busy, setBusy] = useState<string | null>(null)
   const [showStamp, setShowStamp] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [ocrMsg, setOcrMsg] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
 
   // ปิดเมนูเมื่อคลิกข้างนอก
@@ -99,6 +101,44 @@ export default function ToolsMenu(): JSX.Element {
       })
     } finally {
       setBusy(null)
+    }
+  }
+
+  /** ลบช่องว่างที่ tesseract แทรกระหว่างตัวอักษรไทย (ไทยไม่เว้นวรรคในคำ) */
+  const cleanThaiSpaces = (t: string): string =>
+    t.replace(/([฀-๿])[ \t]+(?=[฀-๿])/g, '$1')
+
+  /** OCR ทุกหน้า → รวมเป็นข้อความ → บันทึก .txt */
+  const runOcr = async (): Promise<void> => {
+    setOpen(false)
+    if (!doc) return
+    setBusy('ocr')
+    try {
+      const parts: string[] = []
+      for (let i = 1; i <= doc.numPages; i++) {
+        setOcrMsg(`กำลัง OCR หน้า ${i}/${doc.numPages}…`)
+        const page = await doc.getPage(i)
+        const vp = page.getViewport({ scale: 2 })
+        const canvas = document.createElement('canvas')
+        canvas.width = vp.width
+        canvas.height = vp.height
+        await page.render({ canvasContext: canvas.getContext('2d')!, viewport: vp }).promise
+        const b64 = canvas.toDataURL('image/png').split(',')[1]
+        page.cleanup()
+        const text = await window.api.ocr(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)))
+        parts.push(`--- หน้า ${i} ---\n${cleanThaiSpaces(text).trim()}`)
+      }
+      await window.api.saveBinary({
+        data: new TextEncoder().encode(parts.join('\n\n')),
+        defaultName: `${base}-ocr.txt`,
+        filterName: 'ข้อความ',
+        ext: 'txt'
+      })
+    } catch (err) {
+      window.alert('OCR ผิดพลาด: ' + (err instanceof Error ? err.message : String(err)))
+    } finally {
+      setBusy(null)
+      setOcrMsg(null)
     }
   }
 
@@ -176,6 +216,9 @@ export default function ToolsMenu(): JSX.Element {
           <button onClick={createFromImages}>
             <FilePlus2 size={16} /> สร้าง PDF จากรูปภาพ
           </button>
+          <button onClick={runOcr}>
+            <ScanText size={16} /> OCR → ข้อความ (ไทย/อังกฤษ)
+          </button>
           <div className="tools-sep" />
           <button
             onClick={() => {
@@ -200,6 +243,12 @@ export default function ToolsMenu(): JSX.Element {
           <button onClick={print}>
             <Printer size={16} /> พิมพ์ (Ctrl+P)
           </button>
+        </div>
+      )}
+
+      {ocrMsg && (
+        <div className="ocr-toast">
+          <Loader2 size={16} className="spin" /> {ocrMsg}
         </div>
       )}
 

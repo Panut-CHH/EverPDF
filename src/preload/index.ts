@@ -38,6 +38,8 @@ const api = {
     ipcRenderer.invoke(IPC.writeFilesToDir, files),
   openImages: (): Promise<OpenedImage[]> => ipcRenderer.invoke(IPC.openImages),
   printPdf: (data: Uint8Array): Promise<boolean> => ipcRenderer.invoke(IPC.printPdf, data),
+  ocr: (png: Uint8Array, langs?: string): Promise<string> =>
+    ipcRenderer.invoke(IPC.ocr, png, langs),
   saveBinary: (req: {
     data: Uint8Array
     defaultName: string

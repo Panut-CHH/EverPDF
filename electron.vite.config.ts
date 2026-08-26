@@ -15,7 +15,11 @@ export default defineConfig({
     },
     build: {
       rollupOptions: {
-        input: { index: resolve('src/main/index.ts') }
+        input: {
+          index: resolve('src/main/index.ts'),
+          // worker OCR แยกไฟล์ (fork เป็น pure Node)
+          ocrWorker: resolve('src/main/ocrWorker.ts')
+        }
       }
     }
   },

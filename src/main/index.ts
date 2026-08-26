@@ -25,8 +25,10 @@ function createWindow(): void {
     minWidth: 900,
     minHeight: 600,
     show: false,
-    backgroundColor: '#1e1e1e',
+    backgroundColor: '#0f1117',
     title: 'EverPDF',
+    // ไอคอนหน้าต่าง (ตอน dev; production ใช้ไอคอนของ exe)
+    ...(isDev ? { icon: join(process.cwd(), 'resources/icon.png') } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.mjs'),
       contextIsolation: true,

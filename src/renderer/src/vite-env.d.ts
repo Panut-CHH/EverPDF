@@ -7,3 +7,13 @@ declare module '*?worker' {
   }
   export default workerConstructor
 }
+
+// asset imports (Vite แปลงเป็น URL ที่ถูกต้องทั้ง dev/prod)
+declare module '*.png' {
+  const src: string
+  export default src
+}
+declare module '*?url' {
+  const src: string
+  export default src
+}

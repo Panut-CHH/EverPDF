@@ -1,4 +1,27 @@
 import { useState } from 'react'
+import {
+  FolderOpen,
+  Save,
+  FileDown,
+  Undo2,
+  Redo2,
+  MousePointer2,
+  TextCursorInput,
+  Type,
+  Highlighter,
+  Pencil,
+  Square,
+  Minus,
+  MoveUpRight,
+  Image as ImageIcon,
+  PenTool,
+  Plus,
+  StretchHorizontal,
+  Maximize,
+  ShieldCheck,
+  SearchCheck,
+  type LucideIcon
+} from 'lucide-react'
 import { useDocStore, type Tool } from '@/store/documentStore'
 import SignaturePad from '@/components/SignaturePad'
 import SignDialog from '@/components/SignDialog'
@@ -10,19 +33,48 @@ interface Props {
   onSaveAs: () => void
 }
 
-const TOOLS: { id: Tool; label: string; icon: string; hint: string }[] = [
-  { id: 'select', label: 'เลือก', icon: '⬚', hint: 'เลือก/ย้าย/ปรับขนาด' },
-  { id: 'edittext', label: 'แก้ข้อความ', icon: '✏', hint: 'คลิกข้อความเดิมในเอกสารเพื่อแก้ตรงจุดนั้น' },
-  { id: 'text', label: 'ข้อความ', icon: 'T', hint: 'คลิกบนหน้าเพื่อเพิ่มข้อความใหม่' },
-  { id: 'highlight', label: 'ไฮไลต์', icon: '▨', hint: 'ลากคลุมข้อความเพื่อไฮไลต์' },
-  { id: 'ink', label: 'ปากกา', icon: '✎', hint: 'วาดอิสระ' },
-  { id: 'rect', label: 'สี่เหลี่ยม', icon: '▭', hint: 'ลากเป็นกรอบ' },
-  { id: 'line', label: 'เส้น', icon: '／', hint: 'ลากเป็นเส้น' },
-  { id: 'arrow', label: 'ลูกศร', icon: '➟', hint: 'ลากเป็นลูกศร' },
-  { id: 'image', label: 'รูป', icon: '🖼', hint: 'แทรกรูปภาพ' }
+const TOOLS: { id: Tool; label: string; Icon: LucideIcon }[] = [
+  { id: 'select', label: 'เลือก / ย้าย / ปรับขนาด', Icon: MousePointer2 },
+  { id: 'edittext', label: 'แก้ข้อความเดิม — คลิกข้อความในเอกสาร', Icon: TextCursorInput },
+  { id: 'text', label: 'เพิ่มข้อความใหม่', Icon: Type },
+  { id: 'highlight', label: 'ไฮไลต์', Icon: Highlighter },
+  { id: 'ink', label: 'ปากกา (วาดอิสระ)', Icon: Pencil },
+  { id: 'rect', label: 'สี่เหลี่ยม', Icon: Square },
+  { id: 'line', label: 'เส้น', Icon: Minus },
+  { id: 'arrow', label: 'ลูกศร', Icon: MoveUpRight },
+  { id: 'image', label: 'แทรกรูปภาพ', Icon: ImageIcon }
 ]
 
 const DRAW_TOOLS: Tool[] = ['ink', 'rect', 'line', 'arrow']
+
+/** ปุ่มไอคอนมาตรฐานของ toolbar */
+function IconBtn({
+  Icon,
+  label,
+  active,
+  disabled,
+  variant,
+  onClick
+}: {
+  Icon: LucideIcon
+  label: string
+  active?: boolean
+  disabled?: boolean
+  variant?: 'ghost' | 'accent' | 'sign' | 'verify'
+  onClick?: () => void
+}): JSX.Element {
+  return (
+    <button
+      className={`icon-btn ${variant ?? 'ghost'} ${active ? 'active' : ''}`}
+      title={label}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      <Icon size={18} strokeWidth={2} />
+    </button>
+  )
+}
 
 export default function Toolbar({ onOpen, onSave, onSaveAs }: Props): JSX.Element {
   const tool = useDocStore((s) => s.tool)
@@ -55,60 +107,53 @@ export default function Toolbar({ onOpen, onSave, onSaveAs }: Props): JSX.Elemen
   const [showSign, setShowSign] = useState(false)
   const [showVerify, setShowVerify] = useState(false)
 
-  const handleTool = (t: Tool): void => {
-    if (t === 'signature') setShowPad(true)
-    else setTool(t)
-  }
-
   const showDrawOpts = DRAW_TOOLS.includes(tool)
   const showHlOpts = tool === 'highlight'
 
   return (
     <div className="toolbar">
-      <div className="toolbar-group">
-        <button onClick={onOpen} title="เปิด (Ctrl+O)">📂</button>
-        <button onClick={onSave} disabled={!hasDoc} title="บันทึก (Ctrl+S)">💾</button>
-        <button onClick={onSaveAs} disabled={!hasDoc} title="บันทึกเป็น">💾+</button>
+      <div className="tb-group">
+        <IconBtn Icon={FolderOpen} label="เปิด (Ctrl+O)" onClick={onOpen} />
+        <IconBtn Icon={Save} label="บันทึก (Ctrl+S)" disabled={!hasDoc} onClick={onSave} />
+        <IconBtn Icon={FileDown} label="บันทึกเป็น…" disabled={!hasDoc} onClick={onSaveAs} />
       </div>
 
-      <div className="divider" />
+      <div className="tb-sep" />
 
-      <div className="toolbar-group">
-        <button onClick={undo} disabled={!canUndo} title="เลิกทำ (Ctrl+Z)">↶</button>
-        <button onClick={redo} disabled={!canRedo} title="ทำซ้ำ (Ctrl+Y)">↷</button>
+      <div className="tb-group">
+        <IconBtn Icon={Undo2} label="เลิกทำ (Ctrl+Z)" disabled={!canUndo} onClick={undo} />
+        <IconBtn Icon={Redo2} label="ทำซ้ำ (Ctrl+Y)" disabled={!canRedo} onClick={redo} />
       </div>
 
-      <div className="divider" />
+      <div className="tb-sep" />
 
-      <div className="toolbar-group">
+      <div className="tb-group">
         {TOOLS.map((t) => (
-          <button
+          <IconBtn
             key={t.id}
-            className={tool === t.id ? 'active' : ''}
+            Icon={t.Icon}
+            label={t.label}
+            active={tool === t.id}
             disabled={!hasDoc}
-            title={t.hint}
-            onClick={() => handleTool(t.id)}
-          >
-            <span className="tool-icon">{t.icon}</span>
-          </button>
+            onClick={() => setTool(t.id)}
+          />
         ))}
-        <button
-          className="btn-sign"
+        <IconBtn
+          Icon={PenTool}
+          label="วาดลายเซ็น"
+          variant="sign"
           disabled={!hasDoc}
-          title="วาดลายเซ็น"
-          onClick={() => handleTool('signature')}
-        >
-          ✒ ลายเซ็น
-        </button>
+          onClick={() => setShowPad(true)}
+        />
       </div>
 
       {(showDrawOpts || showHlOpts) && (
         <>
-          <div className="divider" />
+          <div className="tb-sep" />
           <div className="draw-opts">
             {showHlOpts ? (
-              <label>
-                สี
+              <label className="opt">
+                <span>สี</span>
                 <input
                   type="color"
                   value={highlightColor}
@@ -117,16 +162,16 @@ export default function Toolbar({ onOpen, onSave, onSaveAs }: Props): JSX.Elemen
               </label>
             ) : (
               <>
-                <label>
-                  สี
+                <label className="opt">
+                  <span>สี</span>
                   <input
                     type="color"
                     value={drawColor}
                     onChange={(e) => setDrawColor(e.target.value)}
                   />
                 </label>
-                <label>
-                  หนา
+                <label className="opt">
+                  <span>หนา</span>
                   <input
                     type="range"
                     min={1}
@@ -141,34 +186,32 @@ export default function Toolbar({ onOpen, onSave, onSaveAs }: Props): JSX.Elemen
         </>
       )}
 
-      <div className="divider" />
+      <div className="tb-sep" />
 
-      <div className="toolbar-group">
-        <button disabled={!hasDoc} onClick={() => setZoom(zoom - 0.15)}>−</button>
+      <div className="tb-group">
+        <IconBtn Icon={Minus} label="ซูมออก" disabled={!hasDoc} onClick={() => setZoom(zoom - 0.15)} />
         <span className="zoom-label">{Math.round(zoom * 100)}%</span>
-        <button disabled={!hasDoc} onClick={() => setZoom(zoom + 0.15)}>+</button>
-        <button
-          className={fitMode === 'width' ? 'active' : ''}
+        <IconBtn Icon={Plus} label="ซูมเข้า" disabled={!hasDoc} onClick={() => setZoom(zoom + 0.15)} />
+        <IconBtn
+          Icon={StretchHorizontal}
+          label="พอดีความกว้าง"
+          active={fitMode === 'width'}
           disabled={!hasDoc}
           onClick={() => setFitMode('width')}
-          title="พอดีความกว้าง"
-        >
-          ↔
-        </button>
-        <button
-          className={fitMode === 'page' ? 'active' : ''}
+        />
+        <IconBtn
+          Icon={Maximize}
+          label="พอดีทั้งหน้า"
+          active={fitMode === 'page'}
           disabled={!hasDoc}
           onClick={() => setFitMode('page')}
-          title="พอดีทั้งหน้า"
-        >
-          ⤢
-        </button>
+        />
       </div>
 
       {hasDoc && (
         <>
-          <div className="divider" />
-          <div className="toolbar-group">
+          <div className="tb-sep" />
+          <div className="tb-group page-nav">
             <input
               className="page-input"
               type="number"
@@ -185,17 +228,30 @@ export default function Toolbar({ onOpen, onSave, onSaveAs }: Props): JSX.Elemen
         </>
       )}
 
-      <div className="toolbar-spacer" />
-      <div className="toolbar-group">
-        <button className="btn-sign" disabled={!hasDoc} onClick={() => setShowSign(true)}>
-          🔏 เซ็นดิจิทัล
+      <div className="tb-spacer" />
+
+      <div className="tb-group">
+        <button
+          className="pill-btn sign"
+          disabled={!hasDoc}
+          onClick={() => setShowSign(true)}
+          title="ลงลายเซ็นดิจิทัล (PKI)"
+        >
+          <ShieldCheck size={16} strokeWidth={2} />
+          <span>เซ็นดิจิทัล</span>
         </button>
-        <button disabled={!hasDoc} onClick={() => setShowVerify(true)} title="ตรวจสอบลายเซ็น">
-          🔎 ตรวจ
-        </button>
+        <IconBtn
+          Icon={SearchCheck}
+          label="ตรวจสอบลายเซ็น"
+          variant="verify"
+          disabled={!hasDoc}
+          onClick={() => setShowVerify(true)}
+        />
       </div>
-      <div className="file-name">
-        {fileName || 'ยังไม่มีไฟล์'} {dirty && <span className="dirty">●</span>}
+
+      <div className="file-name" title={fileName}>
+        {fileName || 'ยังไม่มีไฟล์'}
+        {dirty && <span className="dot" title="ยังไม่ได้บันทึก" />}
       </div>
 
       {showPad && <SignaturePad onClose={() => setShowPad(false)} />}

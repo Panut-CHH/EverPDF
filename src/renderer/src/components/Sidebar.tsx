@@ -1,4 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
+import {
+  RotateCcw,
+  RotateCw,
+  ChevronUp,
+  ChevronDown,
+  Trash2,
+  FilePlus2,
+  Scissors,
+  PanelLeftClose,
+  PanelLeftOpen
+} from 'lucide-react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { useDocStore } from '@/store/documentStore'
 import { usePdfDoc } from '@/lib/usePdfDoc'
@@ -62,42 +73,50 @@ export default function Sidebar({
   if (collapsed) {
     return (
       <div className="sidebar collapsed">
-        <button className="collapse-btn" onClick={() => setCollapsed(false)}>
-          »
+        <button className="collapse-btn" title="ขยายแถบหน้า" onClick={() => setCollapsed(false)}>
+          <PanelLeftOpen size={18} strokeWidth={2} />
         </button>
       </div>
     )
   }
 
+  const canUp = currentPage > 0
+  const canDown = currentPage < pageOrder.length - 1
+
   return (
     <div className="sidebar">
       <div className="sidebar-head">
-        <span>หน้า ({pageOrder.length})</span>
-        <button className="collapse-btn" onClick={() => setCollapsed(true)}>
-          «
+        <span>หน้า · {pageOrder.length}</span>
+        <button className="collapse-btn" title="ย่อแถบหน้า" onClick={() => setCollapsed(true)}>
+          <PanelLeftClose size={18} strokeWidth={2} />
         </button>
       </div>
 
       <div className="page-ops">
-        <button title="หมุนซ้าย" onClick={() => rotatePage(currentPage, -90)}>↺</button>
-        <button title="หมุนขวา" onClick={() => rotatePage(currentPage, 90)}>↻</button>
-        <button title="เลื่อนขึ้น" onClick={() => currentPage > 0 && movePage(currentPage, currentPage - 1)}>
-          ↑
+        <button title="หมุนซ้าย" onClick={() => rotatePage(currentPage, -90)}>
+          <RotateCcw size={16} strokeWidth={2} />
         </button>
-        <button
-          title="เลื่อนลง"
-          onClick={() => currentPage < pageOrder.length - 1 && movePage(currentPage, currentPage + 1)}
-        >
-          ↓
+        <button title="หมุนขวา" onClick={() => rotatePage(currentPage, 90)}>
+          <RotateCw size={16} strokeWidth={2} />
         </button>
-        <button className="danger" title="ลบหน้า" onClick={() => removePage(currentPage)}>
-          🗑
+        <button title="เลื่อนหน้าขึ้น" disabled={!canUp} onClick={() => movePage(currentPage, currentPage - 1)}>
+          <ChevronUp size={16} strokeWidth={2} />
+        </button>
+        <button title="เลื่อนหน้าลง" disabled={!canDown} onClick={() => movePage(currentPage, currentPage + 1)}>
+          <ChevronDown size={16} strokeWidth={2} />
+        </button>
+        <button className="danger" title="ลบหน้านี้" onClick={() => removePage(currentPage)}>
+          <Trash2 size={16} strokeWidth={2} />
         </button>
       </div>
 
       <div className="page-ops">
-        <button title="แทรกไฟล์ PDF อื่นต่อจากหน้านี้" onClick={onInsert}>➕ แทรก</button>
-        <button title="แยกหน้านี้เป็นไฟล์ใหม่" onClick={onExtract}>⎘ แยก</button>
+        <button className="wide" title="แทรกไฟล์ PDF อื่นต่อจากหน้านี้" onClick={onInsert}>
+          <FilePlus2 size={15} strokeWidth={2} /> แทรก
+        </button>
+        <button className="wide" title="แยกหน้านี้เป็นไฟล์ใหม่" onClick={onExtract}>
+          <Scissors size={15} strokeWidth={2} /> แยก
+        </button>
       </div>
 
       <div className="thumbs">

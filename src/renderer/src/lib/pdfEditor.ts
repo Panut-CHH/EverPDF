@@ -9,6 +9,8 @@ import {
   type RGB
 } from 'pdf-lib'
 import fontkit from '@pdf-lib/fontkit'
+import sarabunRegularUrl from '@/assets/fonts/Sarabun-Regular.ttf?url'
+import sarabunBoldUrl from '@/assets/fonts/Sarabun-Bold.ttf?url'
 import type {
   Annotation,
   TextAnnotation,
@@ -28,15 +30,29 @@ function hexToRgb(hex: string): RGB {
   return rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255)
 }
 
-/** โหลดฟอนต์จาก public/ (คืน null ถ้าไม่พบ) */
-async function fetchFont(path: string): Promise<ArrayBuffer | null> {
-  try {
-    const res = await fetch(path)
-    if (!res.ok) return null
-    return await res.arrayBuffer()
-  } catch {
-    return null
-  }
+/**
+ * โหลดฟอนต์จาก URL ที่ Vite แปลงให้ (คืน null ถ้าไม่พบ)
+ *
+ * ใช้ XMLHttpRequest แทน fetch() เพราะ fetch ของ Chromium ไม่รองรับ file://
+ * (แอปที่แพ็กแล้วโหลดผ่าน file://) — XHR ทำงานได้ทั้ง dev (http) และ production
+ */
+function fetchFont(url: string): Promise<ArrayBuffer | null> {
+  return new Promise((resolve) => {
+    try {
+      const xhr = new XMLHttpRequest()
+      xhr.open('GET', url, true)
+      xhr.responseType = 'arraybuffer'
+      xhr.onload = () => {
+        // file:// สำเร็จจะได้ status 0, http สำเร็จได้ 200-299
+        const ok = xhr.status === 0 || (xhr.status >= 200 && xhr.status < 300)
+        resolve(ok && xhr.response ? (xhr.response as ArrayBuffer) : null)
+      }
+      xhr.onerror = () => resolve(null)
+      xhr.send()
+    } catch {
+      resolve(null)
+    }
+  })
 }
 
 /**
@@ -112,8 +128,9 @@ export async function bakePdf(opts: BakeOptions): Promise<Uint8Array> {
   const srcDoc = await PDFDocument.load(original)
 
   // โหลดฟอนต์ Sarabun ล่วงหน้า (ใช้ทั้งฝั่งฟอร์มและ annotation)
-  const regBytes = await fetchFont('/fonts/Sarabun-Regular.ttf')
-  const boldBytes = await fetchFont('/fonts/Sarabun-Bold.ttf')
+  // ใช้ URL ที่ Vite แปลงให้ → ถูกต้องทั้ง dev และ production (file://)
+  const regBytes = await fetchFont(sarabunRegularUrl)
+  const boldBytes = await fetchFont(sarabunBoldUrl)
 
   // กรอกค่าฟอร์มลง AcroForm แล้ว flatten ให้กลายเป็นเนื้อหาถาวร
   // (ต้องทำก่อน copyPages เพราะ copyPages ไม่พา AcroForm ไปด้วย)

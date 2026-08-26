@@ -41,17 +41,20 @@ export default function EditTextLayer({
       ? sampleColors(canvas, { x: run.x, y: run.y, w: run.w, h: run.h })
       : { bg: '#ffffff', fg: '#000000' }
 
-    // 1) ตัวทับสีพื้น (ขยายเล็กน้อยให้ปิดข้อความเดิมสนิท)
-    const padY = run.h * 0.25
-    const padX = run.h * 0.12
+    // 1) ตัวทับสีพื้น
+    //    - ด้านบนเผื่อน้อย (bbox ครอบ ascender อยู่แล้ว → กันล้นทับแถวบน)
+    //    - ด้านล่างเผื่อมากกว่า (descender อยู่ใต้เส้นฐาน)
+    const padX = run.h * 0.15
+    const padTop = run.h * 0.04
+    const padBottom = run.h * 0.18
     const cover: HighlightAnnotation = {
       id: newId('cover'),
       type: 'highlight',
       pageIndex: originalIndex,
       x: Math.max(0, run.x - padX),
-      y: Math.max(0, run.y - padY),
+      y: Math.max(0, run.y - padTop),
       w: run.w + padX * 2,
-      h: run.h + padY * 2,
+      h: run.h + padTop + padBottom,
       color: colors.bg,
       opacity: 1
     }
@@ -63,8 +66,8 @@ export default function EditTextLayer({
       pageIndex: originalIndex,
       x: run.x,
       y: run.y,
-      w: Math.max(run.w * 1.1, 0.08),
-      h: run.h * 1.4,
+      w: Math.max(run.w * 1.05, 0.08),
+      h: run.h * 1.2,
       text: run.text,
       fontSize: run.fontSize,
       color: colors.fg,

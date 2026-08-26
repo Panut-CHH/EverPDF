@@ -51,6 +51,53 @@ export async function readPagesInfo(doc: PDFDocumentProxy): Promise<PageInfo[]> 
   return pages
 }
 
+/**
+ * สร้างชั้นข้อความโปร่งใสสำหรับ "เลือก + คัดลอก" ทับบน canvas
+ * คำนวณตำแหน่ง/ขนาด span เองจาก text content (ไม่พึ่ง TextLayer ของ pdf.js
+ * ที่ต้อง setup CSS var — เปราะและเปลี่ยนตามเวอร์ชัน)
+ */
+export async function renderTextSelectLayer(
+  page: PDFPageProxy,
+  container: HTMLElement,
+  scale: number,
+  extraRotation = 0
+): Promise<void> {
+  const viewport = page.getViewport({ scale, rotation: (page.rotate + extraRotation) % 360 })
+  const content = await page.getTextContent()
+  container.replaceChildren()
+
+  const frag = document.createDocumentFragment()
+  const spans: { el: HTMLSpanElement; targetW: number; angle: number }[] = []
+
+  for (const item of content.items) {
+    if (!('str' in item) || !item.str) continue
+    // แปลง transform ของ item → พิกัดอุปกรณ์ (device) ผ่าน viewport
+    const tx = pdfjs.Util.transform(viewport.transform, item.transform)
+    const fontHeight = Math.hypot(tx[2], tx[3])
+    if (fontHeight <= 0) continue
+    const angle = Math.atan2(tx[1], tx[0])
+
+    const el = document.createElement('span')
+    el.textContent = item.str
+    el.style.left = `${tx[4]}px`
+    el.style.top = `${tx[5] - fontHeight}px`
+    el.style.fontSize = `${fontHeight}px`
+    frag.appendChild(el)
+    spans.push({ el, targetW: item.width * scale, angle })
+  }
+  container.appendChild(frag)
+
+  // วัดความกว้างจริงแล้ว scaleX ให้พอดีกับความกว้างของข้อความต้นฉบับ
+  const naturals = spans.map((s) => s.el.getBoundingClientRect().width)
+  spans.forEach((s, i) => {
+    const nat = naturals[i]
+    const parts: string[] = []
+    if (s.angle) parts.push(`rotate(${s.angle}rad)`)
+    if (nat > 0 && s.targetW > 0) parts.push(`scaleX(${s.targetW / nat})`)
+    if (parts.length) s.el.style.transform = parts.join(' ')
+  })
+}
+
 // เก็บ render task ที่กำลังทำงานของแต่ละ canvas เพื่อยกเลิกก่อนเริ่มใหม่
 // (กัน error "Cannot use the same canvas during multiple render()")
 const activeRenders = new WeakMap<HTMLCanvasElement, RenderTask>()

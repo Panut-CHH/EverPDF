@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { useDocStore } from '@/store/documentStore'
-import { renderPage } from '@/lib/pdfjs'
+import { renderPage, renderTextSelectLayer } from '@/lib/pdfjs'
 import type { SearchHit } from '@/lib/search'
 import AnnotationLayer from '@/components/AnnotationLayer'
 import DrawSurface from '@/components/DrawSurface'
@@ -39,6 +39,7 @@ function PageViewImpl({
   registerEl: (i: number, el: HTMLDivElement | null) => void
 }): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const textLayerRef = useRef<HTMLDivElement | null>(null)
   const wrapRef = useRef<HTMLDivElement | null>(null)
   const [size, setSize] = useState<Size | null>(null)
   const [visible, setVisible] = useState(displayIndex < 3)
@@ -65,7 +66,19 @@ function PageViewImpl({
     doc.getPage(originalIndex + 1).then(async (page) => {
       if (cancelled || !canvasRef.current) return
       const s = await renderPage(page, canvasRef.current, zoom, rotation)
-      if (!cancelled) setSize(s)
+      if (cancelled) {
+        page.cleanup()
+        return
+      }
+      setSize(s)
+      // ชั้นข้อความสำหรับเลือก/คัดลอก
+      if (textLayerRef.current) {
+        try {
+          await renderTextSelectLayer(page, textLayerRef.current, zoom, rotation)
+        } catch {
+          /* ข้าม ถ้าเรนเดอร์ text layer ไม่สำเร็จ */
+        }
+      }
       page.cleanup()
     })
     return () => {
@@ -90,6 +103,12 @@ function PageViewImpl({
       }}
     >
       <canvas ref={canvasRef} className="page-canvas" />
+
+      {/* ชั้นข้อความโปร่งใส (เลือก/คัดลอก) — เปิด pointer-events เฉพาะโหมดเลือก */}
+      <div
+        ref={textLayerRef}
+        className={`text-layer ${tool === 'select' ? 'active' : ''}`}
+      />
 
       {size && (
         <>

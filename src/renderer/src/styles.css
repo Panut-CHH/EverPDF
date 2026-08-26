@@ -385,16 +385,47 @@ body {
   background: #fff;
 }
 
+/* ---------- Text selection layer ---------- */
+.text-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  line-height: 1;
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+}
+.text-layer.active {
+  pointer-events: auto;
+  user-select: text;
+  cursor: text;
+}
+.text-layer span {
+  position: absolute;
+  color: transparent;
+  white-space: pre;
+  transform-origin: 0 0;
+  user-select: inherit;
+}
+.text-layer.active span::selection {
+  background: rgba(47, 129, 247, 0.35);
+}
+
 /* ---------- Annotation ---------- */
+/* pointer-events none ที่ชั้น เพื่อให้คลิกพื้นที่ว่างทะลุไปเลือกข้อความได้
+   ส่วนตัว annotation เปิด auto เพื่อให้ยังคลิก/ลากได้ */
 .annotation-layer {
   position: absolute;
   top: 0;
   left: 0;
+  z-index: 2;
+  pointer-events: none;
 }
 .annotation {
   position: absolute;
   border: 1px dashed transparent;
   cursor: move;
+  pointer-events: auto;
 }
 .annotation.selected {
   border-color: var(--accent);

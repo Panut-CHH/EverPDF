@@ -40,7 +40,6 @@
         "ext": "pdf",
         "name": "PDF Document",
         "description": "เอกสาร PDF",
-        "icon": "resources/icon.ico",
         "role": "Editor"
       }
     ],

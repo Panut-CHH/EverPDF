@@ -18,6 +18,9 @@ import {
  * (contextIsolation = true → ปลอดภัยจาก XSS ที่พยายามเรียก fs โดยตรง)
  */
 const api = {
+  /** แพลตฟอร์มที่รันอยู่ ('darwin' = macOS, 'win32' = Windows) */
+  platform: process.platform,
+
   openFile: (): Promise<OpenFileResult> => ipcRenderer.invoke(IPC.openFile),
 
   saveFile: (req: SaveFileRequest): Promise<SaveFileResult> =>

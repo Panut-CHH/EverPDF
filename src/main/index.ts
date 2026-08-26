@@ -34,7 +34,10 @@ function createWindow(): void {
     title: 'EverPDF',
     // ซ่อน title bar ระบบ แต่คงปุ่มหน้าต่าง native (– □ ×) แบบ overlay ในธีมมืด
     titleBarStyle: 'hidden',
+    // Windows/Linux: ปุ่มหน้าต่างแบบ overlay สีธีมมืด (mac จะไม่ใช้ค่านี้)
     titleBarOverlay: { color: '#14161d', symbolColor: '#c8cdd8', height: 40 },
+    // macOS: จัดตำแหน่งปุ่ม traffic lights ให้อยู่กลางแถบสูง 40px (mac เท่านั้น)
+    trafficLightPosition: { x: 14, y: 13 },
     // ไอคอนหน้าต่าง (ตอน dev; production ใช้ไอคอนของ exe)
     ...(isDev ? { icon: join(process.cwd(), 'resources/icon.png') } : {}),
     webPreferences: {
@@ -68,8 +71,28 @@ function createWindow(): void {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
-  // ไม่ใช้เมนู native (ทุกคำสั่งอยู่ใน toolbar + คีย์ลัดจัดการในฝั่ง renderer)
-  Menu.setApplicationMenu(null)
+  buildMenu()
+}
+
+/**
+ * เมนูแยกตามแพลตฟอร์ม:
+ * - macOS: ต้องมีเมนูมาตรฐาน (แสดงบนแถบบนสุดของจอ ไม่ใช่ในหน้าต่าง) เพื่อให้
+ *   Cmd+C/V/A/Q ใช้ได้ (ข้อจำกัดของ macOS) — ใช้ role สำเร็จรูปของ Electron
+ * - Windows/Linux: ไม่ใช้เมนู (เมนูจะอยู่ในหน้าต่าง ทำให้รก) — ทุกคำสั่งอยู่ใน toolbar
+ */
+function buildMenu(): void {
+  if (process.platform === 'darwin') {
+    Menu.setApplicationMenu(
+      Menu.buildFromTemplate([
+        { role: 'appMenu' }, // EverPDF: about / quit (Cmd+Q)
+        { role: 'editMenu' }, // undo/redo/cut/copy/paste/selectAll
+        { role: 'viewMenu' },
+        { role: 'windowMenu' }
+      ])
+    )
+  } else {
+    Menu.setApplicationMenu(null)
+  }
 }
 
 /* ---------- IPC handlers ---------- */

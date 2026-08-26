@@ -11,8 +11,14 @@ export default function TitleBar(): JSX.Element {
   const dirty = useDocStore((s) => s.dirty)
   const hasDoc = useDocStore((s) => !!s.pdfBytes)
 
+  // macOS: ปุ่มหน้าต่าง (traffic lights) อยู่ซ้าย → เว้นที่ด้านซ้าย
+  // Windows/Linux: ปุ่มอยู่ขวา → เว้นที่ด้านขวา
+  const isMac = window.api.platform === 'darwin'
+
   return (
     <div className="titlebar">
+      {isMac && <div className="titlebar-traffic-space" />}
+
       <div className="titlebar-brand">
         <img src={logoUrl} alt="" width={18} height={18} />
         <span className="titlebar-app">EverPDF</span>
@@ -27,8 +33,7 @@ export default function TitleBar(): JSX.Element {
         )}
       </div>
 
-      {/* พื้นที่ว่างด้านขวาสำหรับปุ่มหน้าต่าง native */}
-      <div className="titlebar-controls-space" />
+      {!isMac && <div className="titlebar-controls-space" />}
     </div>
   )
 }

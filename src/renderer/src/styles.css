@@ -1129,8 +1129,13 @@ body {
   box-shadow: 0 0 6px var(--accent-2);
   flex-shrink: 0;
 }
-/* เว้นที่ให้ปุ่มหน้าต่าง native (– □ ×) ทางขวา */
+/* เว้นที่ให้ปุ่มหน้าต่าง native (– □ ×) ทางขวา (Windows/Linux) */
 .titlebar-controls-space {
   width: 138px;
+  flex-shrink: 0;
+}
+/* เว้นที่ให้ปุ่ม traffic lights ทางซ้าย (macOS) */
+.titlebar-traffic-space {
+  width: 70px;
   flex-shrink: 0;
 }

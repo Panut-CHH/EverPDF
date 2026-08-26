@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
-import { loadPdf } from '@/lib/pdfjs'
+import { loadPdf, destroyPdf } from '@/lib/pdfjs'
 import { useDocStore } from '@/store/documentStore'
 
 /**
@@ -20,7 +20,7 @@ export function usePdfDoc(): PDFDocumentProxy | null {
     let created: PDFDocumentProxy | null = null
     loadPdf(pdfBytes).then((d) => {
       if (cancelled) {
-        d.destroy()
+        void destroyPdf(d)
         return
       }
       created = d
@@ -28,7 +28,7 @@ export function usePdfDoc(): PDFDocumentProxy | null {
     })
     return () => {
       cancelled = true
-      created?.destroy()
+      void destroyPdf(created)
     }
   }, [pdfBytes])
 

@@ -14,6 +14,7 @@ import {
   Minus,
   MoveUpRight,
   Image as ImageIcon,
+  EyeOff,
   PenTool,
   Plus,
   StretchHorizontal,
@@ -43,7 +44,8 @@ const TOOLS: { id: Tool; label: string; Icon: LucideIcon }[] = [
   { id: 'rect', label: 'สี่เหลี่ยม', Icon: Square },
   { id: 'line', label: 'เส้น', Icon: Minus },
   { id: 'arrow', label: 'ลูกศร', Icon: MoveUpRight },
-  { id: 'image', label: 'แทรกรูปภาพ', Icon: ImageIcon }
+  { id: 'image', label: 'แทรกรูปภาพ', Icon: ImageIcon },
+  { id: 'redact', label: 'ปิดข้อมูล (Redaction) — ลากคลุมส่วนที่ต้องการลบถาวร', Icon: EyeOff }
 ]
 
 const DRAW_TOOLS: Tool[] = ['ink', 'rect', 'line', 'arrow']

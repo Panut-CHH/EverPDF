@@ -209,6 +209,26 @@ ipcMain.handle(IPC.digitalSign, (_e, req: DigitalSignRequest) => digitalSign(req
 
 ipcMain.handle(IPC.verifySign, (_e, bytes: Uint8Array) => verifyPdf(bytes))
 
+/** พิมพ์ PDF: เขียนไฟล์ชั่วคราว → โหลดในหน้าต่างซ่อน (ตัวอ่าน PDF ของ Chromium) → print */
+let printCounter = 0
+ipcMain.handle(IPC.printPdf, async (_e, data: Uint8Array): Promise<boolean> => {
+  const tmp = join(app.getPath('temp'), `everpdf-print-${process.pid}-${++printCounter}.pdf`)
+  await writeFile(tmp, Buffer.from(data))
+  const pw = new BrowserWindow({ show: false, webPreferences: { plugins: true } })
+  try {
+    await pw.loadFile(tmp)
+    await new Promise((r) => setTimeout(r, 400))
+    await new Promise<void>((resolve) => {
+      pw.webContents.print({ silent: false }, () => resolve())
+    })
+    return true
+  } catch {
+    return false
+  } finally {
+    if (!pw.isDestroyed()) pw.close()
+  }
+})
+
 /* ---------- lifecycle ---------- */
 
 app.whenReady().then(() => {

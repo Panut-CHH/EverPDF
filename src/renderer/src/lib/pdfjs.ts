@@ -4,13 +4,39 @@ import type { PDFDocumentProxy, PDFPageProxy, RenderTask } from 'pdfjs-dist'
 import PdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?worker'
 import type { PageInfo } from '@/store/documentStore'
 
-// ตั้ง worker แบบ Vite-friendly (ไม่ใช้ CDN → ทำงาน offline ได้)
-pdfjs.GlobalWorkerOptions.workerPort = new PdfWorker()
-
-/** โหลดเอกสารจาก bytes — clone ก่อนเพราะ pdf.js อาจ transfer/detach buffer */
+/**
+ * โหลดเอกสารจาก bytes — clone ก่อนเพราะ pdf.js อาจ transfer/detach buffer
+ *
+ * สำคัญ: สร้าง Web Worker "ของตัวเอง" ต่อหนึ่งเอกสาร (ไม่ใช้ workerPort ร่วมกัน)
+ * เพราะถ้าแชร์ worker เดียว การ destroy() เอกสารหนึ่งจะทำลาย worker ที่ตัวอื่นใช้อยู่
+ * → error "PDFWorker.fromPort - the worker is being destroyed"
+ * (ใช้ ?worker ของ Vite เพื่อให้ทำงานได้ทั้ง dev และ production file://)
+ */
 export async function loadPdf(bytes: Uint8Array): Promise<PDFDocumentProxy> {
   const copy = bytes.slice()
-  return pdfjs.getDocument({ data: copy }).promise
+  // @types ของ pdfjs กำหนด port เป็น null — cast เพราะ runtime รับ Worker ได้
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const worker = new pdfjs.PDFWorker({ port: new PdfWorker() } as any)
+  const doc = await pdfjs.getDocument({ data: copy, worker }).promise
+  // ผูก worker ไว้กับ doc เพื่อ destroy ทีหลัง
+  ;(doc as unknown as { _ownWorker?: pdfjs.PDFWorker })._ownWorker = worker
+  return doc
+}
+
+/** ทำลายเอกสาร + worker ของมันให้หมด (ใช้แทน doc.destroy() ตรงๆ) */
+export async function destroyPdf(doc: PDFDocumentProxy | null | undefined): Promise<void> {
+  if (!doc) return
+  const worker = (doc as unknown as { _ownWorker?: pdfjs.PDFWorker })._ownWorker
+  try {
+    await doc.destroy()
+  } catch {
+    /* ignore */
+  }
+  try {
+    worker?.destroy()
+  } catch {
+    /* ignore */
+  }
 }
 
 /** ดึงข้อมูลขนาด/หมุนของทุกหน้า (ใช้ scale=1 = point จริง) */

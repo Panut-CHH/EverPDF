@@ -225,6 +225,9 @@ function BoxBody({
     const a = ann as HighlightAnnotation
     return <div style={{ width: '100%', height: '100%', background: a.color, opacity: a.opacity }} />
   }
+  if (ann.type === 'redact') {
+    return <div style={{ width: '100%', height: '100%', background: '#000' }} />
+  }
   // rect
   const a = ann as RectAnnotation
   return (

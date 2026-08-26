@@ -120,21 +120,22 @@ export default function DrawSurface({
     if (!start) return
     const cur = toNorm(e)
 
-    if (tool === 'highlight' || tool === 'rect') {
+    if (tool === 'highlight' || tool === 'rect' || tool === 'redact') {
       const x = Math.min(start.x, cur.x) * size.width
       const y = Math.min(start.y, cur.y) * size.height
       const w = Math.abs(cur.x - start.x) * size.width
       const h = Math.abs(cur.y - start.y) * size.height
       const isHl = tool === 'highlight'
+      const isRedact = tool === 'redact'
       setPreview(
         <rect
           x={x}
           y={y}
           width={w}
           height={h}
-          fill={isHl ? highlightColor : 'none'}
-          fillOpacity={isHl ? 0.4 : 0}
-          stroke={isHl ? 'none' : drawColor}
+          fill={isRedact ? '#000' : isHl ? highlightColor : 'none'}
+          fillOpacity={isRedact ? 1 : isHl ? 0.4 : 0}
+          stroke={isHl || isRedact ? 'none' : drawColor}
           strokeWidth={strokeWidth}
         />
       )
@@ -175,36 +176,39 @@ export default function DrawSurface({
     ;(e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId)
 
     let ann: Annotation | null = null
-    if (tool === 'highlight' || tool === 'rect') {
+    if (tool === 'highlight' || tool === 'rect' || tool === 'redact') {
       const x = Math.min(start.x, cur.x)
       const y = Math.min(start.y, cur.y)
       const w = Math.abs(cur.x - start.x)
       const h = Math.abs(cur.y - start.y)
       if (w < 0.005 || h < 0.005) return
-      ann =
-        tool === 'highlight'
-          ? {
-              id: newId('hl'),
-              type: 'highlight',
-              pageIndex: originalIndex,
-              x,
-              y,
-              w,
-              h,
-              color: highlightColor,
-              opacity: 0.4
-            }
-          : {
-              id: newId('rect'),
-              type: 'rect',
-              pageIndex: originalIndex,
-              x,
-              y,
-              w,
-              h,
-              color: drawColor,
-              strokeWidth
-            }
+      if (tool === 'highlight') {
+        ann = {
+          id: newId('hl'),
+          type: 'highlight',
+          pageIndex: originalIndex,
+          x,
+          y,
+          w,
+          h,
+          color: highlightColor,
+          opacity: 0.4
+        }
+      } else if (tool === 'redact') {
+        ann = { id: newId('redact'), type: 'redact', pageIndex: originalIndex, x, y, w, h }
+      } else {
+        ann = {
+          id: newId('rect'),
+          type: 'rect',
+          pageIndex: originalIndex,
+          x,
+          y,
+          w,
+          h,
+          color: drawColor,
+          strokeWidth
+        }
+      }
     } else if (tool === 'line' || tool === 'arrow') {
       const dist = Math.hypot(cur.x - start.x, cur.y - start.y)
       if (dist < 0.005) return

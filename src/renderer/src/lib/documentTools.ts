@@ -2,6 +2,7 @@ import { PDFDocument, StandardFonts, degrees, rgb, type RGB } from 'pdf-lib'
 import fontkit from '@pdf-lib/fontkit'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import { loadSarabun } from '@/lib/fontLoader'
+import { loadPdf, destroyPdf } from '@/lib/pdfjs'
 import type { OpenedImage } from '@shared/types'
 
 function hexToRgb(hex: string): RGB {
@@ -64,6 +65,50 @@ export async function imagesToPdf(images: OpenedImage[]): Promise<Uint8Array> {
     })
   }
   return doc.save()
+}
+
+/* ---------- Redaction (rasterize) ---------- */
+
+/**
+ * ใช้ Redaction แบบปลอดภัย: หน้าที่มีกล่องปิดข้อมูล (วาดดำทับไว้แล้วใน bakedBytes)
+ * จะถูกแปลงเป็น "รูปภาพ" ทั้งหน้า → ข้อความ/เนื้อหาใต้กล่องดำหายถาวร (ค้นหา/คัดลอกไม่ได้)
+ * หน้าที่ไม่มี redaction จะคงเป็น vector เหมือนเดิม
+ *
+ * @param bakedBytes PDF ที่วาดกล่องดำแล้ว (จาก bakePdf)
+ * @param redactedDisplay เซ็ตของ index หน้า (display order) ที่ต้อง rasterize
+ */
+export async function applyRedaction(
+  bakedBytes: Uint8Array,
+  redactedDisplay: Set<number>
+): Promise<Uint8Array> {
+  const rdoc = await loadPdf(bakedBytes)
+  const src = await PDFDocument.load(bakedBytes)
+  const out = await PDFDocument.create()
+
+  for (let d = 0; d < rdoc.numPages; d++) {
+    if (redactedDisplay.has(d)) {
+      // rasterize ทั้งหน้า (รูปที่ได้ = กล่องดำทับข้อความแล้ว → ข้อความหายจริง)
+      const page = await rdoc.getPage(d + 1)
+      const vp1 = page.getViewport({ scale: 1 })
+      const vp = page.getViewport({ scale: 2 })
+      const canvas = document.createElement('canvas')
+      canvas.width = vp.width
+      canvas.height = vp.height
+      await page.render({ canvasContext: canvas.getContext('2d')!, viewport: vp }).promise
+      const b64 = canvas.toDataURL('image/png').split(',')[1]
+      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
+      const img = await out.embedPng(bytes)
+      const p = out.addPage([vp1.width, vp1.height])
+      p.drawImage(img, { x: 0, y: 0, width: vp1.width, height: vp1.height })
+      page.cleanup()
+    } else {
+      const [copied] = await out.copyPages(src, [d])
+      out.addPage(copied)
+    }
+  }
+
+  await destroyPdf(rdoc)
+  return out.save()
 }
 
 /* ---------- ลายน้ำ / เลขหน้า ---------- */

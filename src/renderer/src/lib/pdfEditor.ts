@@ -239,7 +239,15 @@ async function drawAnnotation(
       return drawLine(page, ann, geom)
     case 'ink':
       return drawInk(page, ann, geom)
+    case 'redact':
+      return drawRedact(page, ann, geom)
   }
+}
+
+/** วาดกล่องปิดข้อมูล = สี่เหลี่ยมดำทึบ (ตัวลบจริงเกิดตอน rasterize) */
+function drawRedact(page: PDFPage, ann: { x: number; y: number; w: number; h: number }, geom: PageGeom): void {
+  const b = geom.box(ann.x, ann.y, ann.w, ann.h)
+  page.drawRectangle({ x: b.x, y: b.y, width: b.w, height: b.h, color: rgb(0, 0, 0) })
 }
 
 function drawText(page: PDFPage, ann: TextAnnotation, geom: PageGeom, font: FontPair): void {

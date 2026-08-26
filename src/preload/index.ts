@@ -37,6 +37,7 @@ const api = {
   writeFilesToDir: (files: NamedFile[]): Promise<number> =>
     ipcRenderer.invoke(IPC.writeFilesToDir, files),
   openImages: (): Promise<OpenedImage[]> => ipcRenderer.invoke(IPC.openImages),
+  printPdf: (data: Uint8Array): Promise<boolean> => ipcRenderer.invoke(IPC.printPdf, data),
   saveBinary: (req: {
     data: Uint8Array
     defaultName: string

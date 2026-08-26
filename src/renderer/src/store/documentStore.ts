@@ -14,6 +14,7 @@ export type Tool =
   | 'arrow'
   | 'ink'
   | 'edittext'
+  | 'redact'
 
 export type FitMode = 'custom' | 'width' | 'page'
 

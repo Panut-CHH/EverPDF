@@ -14,6 +14,7 @@ export type AnnotationType =
   | 'rect'
   | 'ink'
   | 'line'
+  | 'redact'
 
 interface BaseAnnotation {
   id: string
@@ -61,6 +62,14 @@ export interface RectAnnotation extends BoxAnnotation {
   fill?: string
 }
 
+/**
+ * พื้นที่ปิดข้อมูล (Redaction) = กล่องทึบ
+ * ตอน "ใช้ Redaction" หน้าที่มีกล่องนี้จะถูก rasterize เพื่อลบข้อมูลใต้กล่องถาวร
+ */
+export interface RedactAnnotation extends BoxAnnotation {
+  type: 'redact'
+}
+
 /** เส้นตรง / ลูกศร */
 export interface LineAnnotation extends BaseAnnotation {
   type: 'line'
@@ -88,12 +97,24 @@ export type Annotation =
   | RectAnnotation
   | LineAnnotation
   | InkAnnotation
+  | RedactAnnotation
 
 /** annotation ที่มีกล่อง (ย้าย/ปรับขนาดด้วย handle ได้) */
-export type BoxLike = TextAnnotation | ImageAnnotation | HighlightAnnotation | RectAnnotation
+export type BoxLike =
+  | TextAnnotation
+  | ImageAnnotation
+  | HighlightAnnotation
+  | RectAnnotation
+  | RedactAnnotation
 
 export function isBoxLike(a: Annotation): a is BoxLike {
-  return a.type === 'text' || a.type === 'image' || a.type === 'highlight' || a.type === 'rect'
+  return (
+    a.type === 'text' ||
+    a.type === 'image' ||
+    a.type === 'highlight' ||
+    a.type === 'rect' ||
+    a.type === 'redact'
+  )
 }
 
 let counter = 0

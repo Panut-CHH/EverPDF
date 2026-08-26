@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react'
 import { useDocStore } from '@/store/documentStore'
-import { loadPdf, readPagesInfo } from '@/lib/pdfjs'
+import { loadPdf, readPagesInfo, destroyPdf } from '@/lib/pdfjs'
 import { bakePdf } from '@/lib/pdfEditor'
 import { extractFields } from '@/lib/forms'
 import { extractTextRuns } from '@/lib/textLines'
@@ -25,13 +25,11 @@ export default function App(): JSX.Element {
     const pages = await readPagesInfo(doc)
     const fileName = res.filePath?.split(/[\\/]/).pop() ?? 'document.pdf'
     loadDocument({ bytes: res.data, filePath: res.filePath ?? null, fileName, pages })
-    // ดึง form fields + text runs (สำหรับ Edit Text)
-    extractFields(doc)
-      .then(setFormFields)
-      .catch(() => setFormFields([]))
-    extractTextRuns(doc)
-      .then(setTextRuns)
-      .catch(() => setTextRuns([]))
+    // ดึง form fields + text runs (สำหรับ Edit Text) แล้วทำลาย doc ชั่วคราว
+    Promise.allSettled([
+      extractFields(doc).then(setFormFields, () => setFormFields([])),
+      extractTextRuns(doc).then(setTextRuns, () => setTextRuns([]))
+    ]).finally(() => void destroyPdf(doc))
   }, [loadDocument, setFormFields, setTextRuns])
 
   /** บันทึก: อบ annotation + ฟอร์ม + จัดหน้า แล้วเขียนไฟล์ (Save As ถ้ายังไม่มี path) */
@@ -77,12 +75,10 @@ export default function App(): JSX.Element {
       const doc = await loadPdf(bytes)
       const pages = await readPagesInfo(doc)
       loadDocument({ bytes, filePath, fileName, pages })
-      extractFields(doc)
-        .then(setFormFields)
-        .catch(() => setFormFields([]))
-      extractTextRuns(doc)
-        .then(setTextRuns)
-        .catch(() => setTextRuns([]))
+      Promise.allSettled([
+        extractFields(doc).then(setFormFields, () => setFormFields([])),
+        extractTextRuns(doc).then(setTextRuns, () => setTextRuns([]))
+      ]).finally(() => void destroyPdf(doc))
     },
     [loadDocument, setFormFields, setTextRuns]
   )
@@ -157,6 +153,17 @@ export default function App(): JSX.Element {
       } else if (ctrl && e.key.toLowerCase() === 'y') {
         e.preventDefault()
         s.redo()
+      } else if (ctrl && e.key.toLowerCase() === 'p') {
+        e.preventDefault()
+        if (s.pdfBytes) {
+          bakePdf({
+            original: s.pdfBytes,
+            pageOrder: s.pageOrder,
+            pages: s.pages,
+            annotations: s.annotations,
+            formFields: s.formFields
+          }).then((b) => window.api.printPdf(b))
+        }
       } else if ((e.key === 'Delete' || e.key === 'Backspace') && s.selectedId && !editing) {
         e.preventDefault()
         s.removeAnnotation(s.selectedId)

@@ -5,13 +5,15 @@ import {
   FileText,
   FilePlus2,
   Droplets,
+  EyeOff,
+  Printer,
   Loader2
 } from 'lucide-react'
 import { useDocStore } from '@/store/documentStore'
 import { usePdfDoc } from '@/lib/usePdfDoc'
-import { loadPdf } from '@/lib/pdfjs'
+import { loadPdf, destroyPdf } from '@/lib/pdfjs'
 import { bakePdf } from '@/lib/pdfEditor'
-import { pagesToText, imagesToPdf } from '@/lib/documentTools'
+import { pagesToText, imagesToPdf, applyRedaction } from '@/lib/documentTools'
 import StampDialog from '@/components/StampDialog'
 
 /** อบสถานะปัจจุบันเป็น bytes (annotation + ฟอร์ม + จัดหน้า) */
@@ -72,7 +74,7 @@ export default function ToolsMenu(): JSX.Element {
         })
         page.cleanup()
       }
-      rdoc.destroy()
+      await destroyPdf(rdoc)
       await window.api.writeFilesToDir(files)
     } finally {
       setBusy(null)
@@ -92,6 +94,44 @@ export default function ToolsMenu(): JSX.Element {
         filterName: 'ข้อความ',
         ext: 'txt'
       })
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  /** พิมพ์: อบสถานะปัจจุบันแล้วส่งไปพิมพ์ */
+  const print = async (): Promise<void> => {
+    setOpen(false)
+    setBusy('print')
+    try {
+      const bytes = await bakedBytes()
+      if (bytes) await window.api.printPdf(bytes)
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  /** ใช้ Redaction: rasterize หน้าที่มีกล่องปิดข้อมูล แล้วบันทึกเป็นไฟล์ใหม่ */
+  const doRedaction = async (): Promise<void> => {
+    setOpen(false)
+    const s = useDocStore.getState()
+    const redactedOrig = new Set(
+      s.annotations.filter((a) => a.type === 'redact').map((a) => a.pageIndex)
+    )
+    if (redactedOrig.size === 0) {
+      window.alert('ยังไม่มีพื้นที่ปิดข้อมูล — เลือกเครื่องมือ "ปิดข้อมูล" แล้วลากคลุมส่วนที่ต้องการลบก่อน')
+      return
+    }
+    setBusy('redact')
+    try {
+      const bytes = await bakedBytes()
+      if (!bytes) return
+      const redactedDisplay = new Set<number>()
+      s.pageOrder.forEach((orig, disp) => {
+        if (redactedOrig.has(orig)) redactedDisplay.add(disp)
+      })
+      const out = await applyRedaction(bytes, redactedDisplay)
+      await window.api.saveFile({ data: out, defaultName: `${base}-redacted.pdf` })
     } finally {
       setBusy(null)
     }
@@ -141,6 +181,13 @@ export default function ToolsMenu(): JSX.Element {
             }}
           >
             <Droplets size={16} /> ลายน้ำ & เลขหน้า…
+          </button>
+          <button onClick={doRedaction}>
+            <EyeOff size={16} /> ใช้ Redaction & บันทึก
+          </button>
+          <div className="tools-sep" />
+          <button onClick={print}>
+            <Printer size={16} /> พิมพ์ (Ctrl+P)
           </button>
         </div>
       )}

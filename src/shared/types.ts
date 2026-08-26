@@ -94,6 +94,7 @@ export const IPC = {
   writeFilesToDir: 'file:writeToDir',
   openImages: 'file:openImages',
   getRecent: 'file:getRecent',
+  printPdf: 'file:print',
   digitalSign: 'sign:digital',
   verifySign: 'sign:verify',
   onMenuOpen: 'menu:open',
